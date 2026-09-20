@@ -1,0 +1,56 @@
+<%- include('../partials/header', { title: 'Pesanan Jasa' }) %>
+
+<div class="admin-shell">
+  <%- include('../partials/admin-nav') %>
+  <section>
+    <div class="admin-head">
+      <div><h1>Pesanan Jasa &mdash; Website Jadi</h1><p><%= services.length %> pesanan &middot; <%= counts.in_progress || 0 %> sedang dipasang &middot; <%= counts.awaiting_info || 0 %> menunggu data &middot; <%= counts.review || 0 %> menunggu konfirmasi</p></div>
+    </div>
+
+    <% if (!services.length) { %>
+      <div class="empty-state"><%- icon('layout') %><h3>Belum ada pesanan jasa</h3><p>Muncul otomatis saat pembeli memilih "Website Jadi" dan pesanannya lunas. Atur harga jasa di form produk.</p></div>
+    <% } else { %>
+      <% services.forEach(s => { const st = serviceStatus(s.status); const isOpen = open === s.id; %>
+        <div class="card order-card">
+          <div class="order-head">
+            <div>
+              <strong><%= s.product_title %></strong> <span class="order-code" style="margin-left:6px"><%= s.order_code %></span>
+              <div class="order-meta"><%= s.buyer_name %> &middot; <%= s.buyer_email %> &middot; dibuat <%= fmtDate(s.created_at) %><% if (s.contact) { %> &middot; kontak: <strong><%= s.contact %></strong><% } %></div>
+            </div>
+            <div style="display:flex;gap:10px;align-items:center"><span class="badge badge-<%= st.tone %>"><%= st.label %></span><a href="/admin/services?open=<%= isOpen ? '' : s.id %>#svc-<%= s.id %>" class="btn btn-sm btn-secondary"><%= isOpen ? 'Tutup' : 'Kelola' %></a></div>
+          </div>
+          <div id="svc-<%= s.id %>" class="card-pad" style="<%= isOpen ? '' : 'display:none' %>">
+            <div class="dash-2col" style="margin-bottom:0">
+              <div>
+                <h3 style="font-size:14px">Data dari pembeli</h3>
+                <% if (!s.business_name) { %><p class="muted small">Pembeli belum mengisi data pemasangan.</p><% } else { %>
+                <dl class="spec-list" style="grid-template-columns:1fr">
+                  <div><dt>Bisnis</dt><dd><%= s.business_name %></dd></div>
+                  <div><dt>Domain</dt><dd><%= s.domain %></dd></div>
+                  <div><dt>Kontak</dt><dd><%= s.contact %></dd></div>
+                </dl>
+                <p class="small" style="margin-top:10px"><strong>Akses hosting:</strong><br><span style="white-space:pre-line"><%= s.hosting_info %></span></p>
+                <% if (s.notes) { %><p class="small"><strong>Catatan:</strong> <%= s.notes %></p><% } %>
+                <% } %>
+              </div>
+              <form action="/admin/services/<%= s.id %>" method="POST">
+                <h3 style="font-size:14px">Update dari kamu</h3>
+                <div class="form-group"><label>Status</label>
+                  <select name="status">
+                    <% ['awaiting_info','in_progress','review','done','canceled'].forEach(k => { %><option value="<%= k %>" <%= s.status === k ? 'selected' : '' %>><%= serviceStatus(k).label %></option><% }) %>
+                  </select>
+                  <p class="help-text">Set <strong>Menunggu konfirmasi</strong> setelah website online &mdash; pembeli akan melihat link di bawah dan tombol "Terima".</p>
+                </div>
+                <div class="form-group"><label>Link website hasil</label><input name="result_url" value="<%= s.result_url || '' %>" placeholder="https://lembur.majujaya.co.id"></div>
+                <div class="form-group"><label>Catatan untuk pembeli (akun admin, langkah berikutnya)</label><textarea name="admin_notes" rows="3"><%= s.admin_notes || '' %></textarea></div>
+                <button type="submit" class="btn"><%- icon('check') %> Simpan</button>
+              </form>
+            </div>
+          </div>
+        </div>
+      <% }) %>
+    <% } %>
+  </section>
+</div>
+
+<%- include('../partials/footer') %>

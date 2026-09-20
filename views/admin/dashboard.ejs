@@ -94,13 +94,16 @@
 
     <div class="dash-2col">
       <!-- Perlu perhatian -->
-      <% const issues = attention.noFile.length + attention.noDemo.length + attention.noThumb.length + attention.stalePending.length; %>
+      <% const issues = attention.noFile.length + attention.noDemo.length + attention.noThumb.length + attention.stalePending.length + (attention.services ? 1 : 0); %>
       <div class="card card-pad">
         <div class="chart-head"><div><h3>Perlu perhatian</h3><p class="muted small" style="margin:0"><%= issues ? issues + ' hal yang sebaiknya dibereskan' : 'Semua beres' %></p></div></div>
         <% if (!issues) { %>
           <div class="chart-empty"><%- icon('checkCircle') %> Tidak ada masalah. Mantap!</div>
         <% } else { %>
           <ul class="attention-list">
+            <% if (attention.services) { %>
+              <li><span class="att-dot info"></span><div><strong><%= attention.services %> pesanan Website Jadi perlu dikerjakan</strong><span class="muted small">Pembeli menunggu pemasangan. <a href="/admin/services">Buka Pesanan Jasa &rarr;</a></span></div></li>
+            <% } %>
             <% if (attention.noFile.length) { %>
               <li><span class="att-dot danger"></span><div><strong><%= attention.noFile.length %> produk premium belum punya file source code</strong><span class="muted small">Pembeli tidak bisa download: <% attention.noFile.slice(0,3).forEach((p, i) => { %><a href="/admin/products/<%= p.id %>/edit"><%= p.title %></a><%= i < Math.min(attention.noFile.length,3) - 1 ? ', ' : '' %><% }) %><%= attention.noFile.length > 3 ? ', …' : '' %></span></div></li>
             <% } %>

@@ -133,8 +133,9 @@ router.get('/orders', requireAuth, (req, res) => {
   const orders = db.prepare('SELECT * FROM orders WHERE user_id = ? ORDER BY created_at DESC')
     .all(req.session.user.id);
   // ikutkan file_path produk agar view tahu apakah file sudah bisa didownload
-  const items = db.prepare(`SELECT oi.*, p.file_path, p.update_months, p.slug FROM order_items oi
-                            LEFT JOIN products p ON p.id = oi.product_id WHERE oi.order_id = ?`);
+  const items = db.prepare(`SELECT oi.*, p.file_path, p.update_months, p.slug, s.id AS service_id, s.status AS service_status FROM order_items oi
+                            LEFT JOIN products p ON p.id = oi.product_id
+                            LEFT JOIN service_orders s ON s.order_item_id = oi.id WHERE oi.order_id = ?`);
   const ordersWithItems = orders.map(o => ({ ...o, items: items.all(o.id) }));
   // Produk versi gratis yang pernah diunduh user (untuk unduh ulang + tawaran upgrade)
   const freeDownloads = db.prepare(`SELECT p.id, p.title, p.slug, p.price, p.free_file_path, MAX(d.downloaded_at) AS last_at,

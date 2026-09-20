@@ -21,6 +21,7 @@ bisa langsung dicoba (embed iframe) sebelum pembeli checkout dan bayar via Midtr
 - Riwayat pesanan pembeli
 - **Delivery file otomatis**: admin upload zip source code per produk (disimpan privat di `storage/files/`), pembeli bisa download di "Pesanan Saya" setelah status `paid`. Produk yang sudah dibeli tidak bisa dimasukkan keranjang lagi.
 - **Freemium (Gratis vs Premium)**: setiap produk bisa punya versi gratis (fitur terbatas, wajib login untuk download → kamu dapat email calon pembeli) dan versi premium (sekali bayar, update N bulan, lisensi komersial). Halaman produk menampilkan tabel perbandingan otomatis; dashboard menghitung konversi gratis → premium per produk.
+- **Website Jadi (jasa pasang)**: tier ketiga per produk — pembeli membayar premium + jasa pasang, mengisi data (domain, akses hosting, kontak), admin mengerjakan lewat pipeline *Menunggu data → Sedang dipasang → Menunggu konfirmasi → Selesai* di menu **Pesanan Jasa**, pembeli menerima hasil lewat tombol "Terima". Atur harga jasa di form produk (0 = tidak ditawarkan).
 - Panel admin: dashboard analitik (pendapatan harian, status pesanan, produk terlaris, daftar hal yang perlu perhatian), CRUD produk (+ upload thumbnail & file produk), daftar semua pesanan, tandai lunas manual (untuk transfer manual / testing tanpa webhook), jumlah download per order
 
 ## Cara Menjalankan (Development)

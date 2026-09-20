@@ -97,6 +97,7 @@ router.get('/', (req, res) => {
     noFile: db.prepare("SELECT id, title FROM products WHERE price > 0 AND (file_path IS NULL OR file_path = '')").all(),
     noDemo: db.prepare("SELECT id, title FROM products WHERE demo_url IS NULL OR demo_url = ''").all(),
     noThumb: db.prepare("SELECT id, title FROM products WHERE thumbnail IS NULL OR thumbnail = ''").all(),
+    services: db.prepare("SELECT COUNT(*) AS c FROM service_orders WHERE status IN ('awaiting_info','in_progress')").get().c,
     stalePending: db.prepare(`SELECT id, order_code, total FROM orders WHERE status = 'pending'
                               AND created_at < datetime('now', '-1 day') ORDER BY created_at DESC LIMIT 5`).all(),
   };
@@ -186,6 +187,26 @@ router.post('/categories', (req, res) => {
   db.prepare('INSERT INTO categories (name, slug) VALUES (?, ?)').run(name, slug);
   req.flash('success', `Kategori "${name}" ditambahkan.`);
   res.redirect(req.get('Referer') || '/admin/products/new');
+});
+
+// -- Pesanan Jasa (Website Jadi) --
+router.get('/services', (req, res) => {
+  const services = db.prepare(`SELECT s.*, p.title AS product_title, o.order_code, u.name AS buyer_name, u.email AS buyer_email
+                               FROM service_orders s JOIN products p ON p.id = s.product_id JOIN orders o ON o.id = s.order_id LEFT JOIN users u ON u.id = s.user_id
+                               ORDER BY CASE s.status WHEN 'in_progress' THEN 0 WHEN 'awaiting_info' THEN 1 WHEN 'review' THEN 2 WHEN 'done' THEN 3 ELSE 4 END, s.updated_at DESC`).all();
+  const counts = {}; services.forEach(s => { counts[s.status] = (counts[s.status] || 0) + 1; });
+  res.render('admin/services', { services, counts, open: req.query.open ? parseInt(req.query.open, 10) : null });
+});
+
+router.post('/services/:id', (req, res) => {
+  const { status, result_url, admin_notes } = req.body;
+  const allowed = ['awaiting_info', 'in_progress', 'review', 'done', 'canceled'];
+  if (!allowed.includes(status)) return res.status(400).render('checkout-error', { message: 'Status tidak valid.' });
+  db.prepare(`UPDATE service_orders SET status=?, result_url=?, admin_notes=?, updated_at=datetime('now'),
+              completed_at = CASE WHEN ? = 'done' THEN COALESCE(completed_at, datetime('now')) ELSE completed_at END WHERE id=?`)
+    .run(status, result_url || '', admin_notes || '', status, req.params.id);
+  req.flash('success', 'Pesanan jasa diperbarui.');
+  res.redirect('/admin/services');
 });
 
 // -- Pesanan --

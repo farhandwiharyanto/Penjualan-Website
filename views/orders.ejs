@@ -46,13 +46,18 @@
       <ul class="order-items">
         <% o.items.forEach(it => { %>
           <li>
-            <span><%= it.title %></span>
+            <span><%= it.title %><% if (it.with_setup) { %> <span class="badge badge-info">+ Website Jadi</span><% } %></span>
             <% if (o.status === 'paid') { %>
+              <span style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+              <% if (it.service_id) { const ss = serviceStatus(it.service_status); %>
+                <a href="/service/<%= it.service_id %>" class="btn btn-sm <%= it.service_status === 'awaiting_info' ? 'btn-setup' : 'btn-secondary' %>"><%- icon('layout') %> <%= it.service_status === 'awaiting_info' ? 'Isi data pemasangan' : 'Pemasangan: ' + ss.label %></a>
+              <% } %>
               <% if (it.file_path) { %>
                 <a href="/download/<%= o.id %>/<%= it.product_id %>" class="btn btn-sm btn-success"><%- icon('download') %> Download</a>
               <% } else { %>
                 <span class="badge badge-muted">File belum tersedia</span>
               <% } %>
+              </span>
             <% } else { %>
               <span class="muted small"><%= rp(it.price) %></span>
             <% } %>

@@ -65,6 +65,7 @@ app.use('/auth', require('./routes/auth'));
 app.use('/cart', require('./routes/cart'));
 app.use('/checkout', require('./routes/checkout'));
 app.use('/download', require('./routes/download'));
+app.use('/service', require('./routes/services'));
 app.use('/admin', require('./routes/admin'));
 
 app.use((req, res) => {

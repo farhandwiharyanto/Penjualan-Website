@@ -1,0 +1,67 @@
+<%- include('partials/header', { title: 'Pemasangan Website' }) %>
+<% const st = serviceStatus(svc.status); const editable = ['awaiting_info', 'in_progress'].includes(svc.status); %>
+<% const steps = ['awaiting_info', 'in_progress', 'review', 'done']; const idx = Math.max(0, steps.indexOf(svc.status)); %>
+
+<nav class="breadcrumb"><a href="/checkout/orders">Pesanan Saya</a><span class="sep">/</span><span>Pemasangan <%= svc.product_title %></span></nav>
+
+<div class="cart-layout">
+  <div>
+    <div class="card card-pad" style="margin-bottom:20px">
+      <div class="chart-head">
+        <div><h2 style="margin:0">Website Jadi &mdash; <%= svc.product_title %></h2><p class="muted small" style="margin:2px 0 0">Order <span class="order-code"><%= svc.order_code %></span></p></div>
+        <span class="badge badge-<%= st.tone %>"><%= st.label %></span>
+      </div>
+      <% if (svc.status !== 'canceled') { %>
+      <nav class="stepper" style="margin:8px 0 0;max-width:none">
+        <% ['Isi data', 'Dipasang', 'Konfirmasi', 'Selesai'].forEach((l, i) => { const state = i < idx ? 'done' : i === idx ? 'active' : ''; %>
+          <% if (i) { %><span class="stepper-line <%= i <= idx ? 'done' : '' %>"></span><% } %>
+          <span class="stepper-item <%= state %>"><span class="stepper-num"><% if (state === 'done') { %><%- icon('check') %><% } else { %><%= i + 1 %><% } %></span><span class="label"><%= l %></span></span>
+        <% }) %>
+      </nav>
+      <% } %>
+    </div>
+
+    <% if (svc.status === 'review' || svc.status === 'done') { %>
+      <div class="card card-pad owned-box" style="margin-bottom:20px">
+        <div class="owned-title"><%- icon('checkCircle') %> Website kamu sudah online</div>
+        <% if (svc.result_url) { %><p style="margin:8px 0"><a href="<%= svc.result_url %>" target="_blank" rel="noopener" class="btn btn-success btn-sm"><%- icon('external') %> Buka <%= svc.result_url.replace(/^https?:\/\//, '') %></a></p><% } %>
+        <% if (svc.admin_notes) { %><p class="small" style="white-space:pre-line;margin:8px 0 0"><strong>Catatan dari kami:</strong><br><%= svc.admin_notes %></p><% } %>
+        <% if (svc.status === 'review') { %>
+          <form action="/service/<%= svc.id %>/accept" method="POST" style="margin-top:12px" data-confirm="Tandai pemasangan selesai? Pastikan website sudah kamu cek dan sesuai." data-confirm-title="Terima hasil pemasangan?" data-confirm-ok="Ya, terima" data-confirm-tone="success">
+            <button type="submit" class="btn btn-success"><%- icon('check') %> Sudah sesuai, terima</button>
+          </form>
+          <p class="help-text" style="margin-top:8px">Ada yang kurang? Hubungi kami lewat kontak yang kamu isi sebelum menekan terima.</p>
+        <% } %>
+      </div>
+    <% } %>
+
+    <div class="card card-pad">
+      <h3><%- icon('layout') %> Data pemasangan</h3>
+      <% if (svc.status === 'awaiting_info') { %><p class="muted small">Lengkapi data berikut supaya kami bisa mulai memasang. Semakin lengkap, semakin cepat selesai.</p><% } %>
+      <form action="/service/<%= svc.id %>" method="POST">
+        <div class="form-row">
+          <div class="form-group"><label>Nama bisnis / instansi *</label><input name="business_name" value="<%= svc.business_name || '' %>" placeholder="PT Maju Jaya" required <%= editable ? '' : 'disabled' %>></div>
+          <div class="form-group"><label>Domain yang dipakai *</label><input name="domain" value="<%= svc.domain || '' %>" placeholder="lembur.majujaya.co.id (atau 'belum punya')" required <%= editable ? '' : 'disabled' %>></div>
+        </div>
+        <div class="form-group"><label>Akses hosting / server *</label><textarea name="hosting_info" rows="4" placeholder="Contoh: cPanel di Niagahoster, login: ... / VPS Ubuntu IP ... user ... / Vercel + database Neon. Kalau belum punya, tulis 'belum punya' dan kami arahkan." required <%= editable ? '' : 'disabled' %>><%= svc.hosting_info || '' %></textarea><p class="help-text">Untuk keamanan, kamu bisa kirim password lewat WhatsApp/email setelah kami menghubungi.</p></div>
+        <div class="form-row">
+          <div class="form-group"><label>Kontak (WhatsApp / email) *</label><input name="contact" value="<%= svc.contact || currentUser.email %>" required <%= editable ? '' : 'disabled' %>></div>
+          <div class="form-group"><label>Catatan (logo, warna, akun admin yang diminta)</label><input name="notes" value="<%= svc.notes || '' %>" placeholder="Logo dikirim via WA, warna biru tua, admin: hrd@..." <%= editable ? '' : 'disabled' %>></div>
+        </div>
+        <% if (editable) { %><button type="submit" class="btn"><%- icon('check') %> <%= svc.status === 'awaiting_info' ? 'Kirim data & mulai pemasangan' : 'Simpan perubahan' %></button><% } %>
+      </form>
+    </div>
+  </div>
+
+  <aside class="card card-pad">
+    <h3>Apa yang terjadi selanjutnya</h3>
+    <ol class="buy-steps">
+      <li><span class="buy-num">1</span><div><strong>Kamu isi data</strong><span>Form di sebelah kiri.</span></div></li>
+      <li><span class="buy-num">2</span><div><strong>Kami pasang</strong><span>Biasanya 1&ndash;3 hari kerja setelah akses diterima.</span></div></li>
+      <li><span class="buy-num">3</span><div><strong>Kamu cek hasilnya</strong><span>Link + akun admin dikirim ke sini dan ke kontakmu.</span></div></li>
+      <li><span class="buy-num">4</span><div><strong>Klik terima</strong><span>Selesai. Source code premium tetap bisa kamu download di Pesanan Saya.</span></div></li>
+    </ol>
+  </aside>
+</div>
+
+<%- include('partials/footer') %>
