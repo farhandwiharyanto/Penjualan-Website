@@ -528,3 +528,12 @@ code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 1
 .btn:focus-visible { outline: none; box-shadow: 0 0 0 3px var(--surface), 0 0 0 5px var(--primary); }
 .btn-success:focus-visible { box-shadow: 0 0 0 3px var(--surface), 0 0 0 5px var(--success); }
 .btn-danger:focus-visible { box-shadow: 0 0 0 3px var(--surface), 0 0 0 5px var(--danger); }
+
+/* ===== Transisi antar halaman (View Transitions API; Chrome/Edge/Safari 18+, browser lain langsung tanpa animasi) ===== */
+@view-transition { navigation: auto; }
+::view-transition-old(root) { animation: 160ms ease-out both vt-out; }
+::view-transition-new(root) { animation: 260ms cubic-bezier(.2,.7,.2,1) both vt-in; }
+@keyframes vt-out { to { opacity: 0; transform: translateY(-6px); } }
+@keyframes vt-in { from { opacity: 0; transform: translateY(10px); } }
+.topbar { view-transition-name: topbar; } /* navbar tetap diam, hanya isi halaman yang beranimasi */
+@media (prefers-reduced-motion: reduce) { ::view-transition-old(root), ::view-transition-new(root) { animation: none; } }
