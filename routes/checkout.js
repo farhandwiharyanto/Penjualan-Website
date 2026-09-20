@@ -4,6 +4,10 @@ const midtransClient = require('midtrans-client');
 const db = require('../db/db');
 const { requireAuth } = require('./_middleware');
 
+// Kode metode Midtrans: other_qris (QRIS), gopay, shopeepay, bca_va, bni_va, bri_va, permata_va, cimb_va,
+// other_va (Mandiri/bank lain), echannel (Mandiri Bill), credit_card, dll.
+const ENABLED_PAYMENTS = (process.env.MIDTRANS_ENABLED_PAYMENTS || '').split(',').map(s => s.trim()).filter(Boolean);
+
 const snap = new midtransClient.Snap({
   isProduction: process.env.MIDTRANS_IS_PRODUCTION === 'true',
   serverKey: process.env.MIDTRANS_SERVER_KEY,
@@ -54,6 +58,9 @@ router.get('/', requireAuth, async (req, res) => {
       first_name: req.session.user.name,
       email: req.session.user.email,
     },
+    // Batasi metode di popup Snap. Atur lewat MIDTRANS_ENABLED_PAYMENTS di .env (pisah koma),
+    // kosongkan untuk menampilkan semua metode yang aktif di dashboard Midtrans.
+    ...(ENABLED_PAYMENTS.length ? { enabled_payments: ENABLED_PAYMENTS } : {}),
     callbacks: {
       finish: `${process.env.APP_URL}/checkout/finish?order=${orderCode}`,
     },

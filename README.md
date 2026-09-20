@@ -37,6 +37,7 @@ bisa langsung dicoba (embed iframe) sebelum pembeli checkout dan bayar via Midtr
    Lalu isi `.env`:
    - `SESSION_SECRET` — bebas, string acak panjang
    - `MIDTRANS_SERVER_KEY` & `MIDTRANS_CLIENT_KEY` — ambil dari [dashboard.midtrans.com](https://dashboard.midtrans.com) (mode **Sandbox** dulu untuk testing, gratis, tanpa perlu akun bisnis aktif)
+   - `MIDTRANS_ENABLED_PAYMENTS` — metode yang tampil di popup, default hanya **QRIS + Virtual Account**. Kosongkan untuk semua metode. Kode: `other_qris`, `gopay`, `shopeepay`, `bca_va`, `bni_va`, `bri_va`, `permata_va`, `cimb_va`, `other_va`, `echannel`, `credit_card`.
    - `APP_URL` — biarkan `http://localhost:3000` saat development
 
 3. **Isi data contoh** (opsional tapi disarankan untuk melihat aplikasi berjalan)
