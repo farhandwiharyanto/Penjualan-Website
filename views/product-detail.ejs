@@ -1,0 +1,164 @@
+<%- include('partials/header', { title: product.title }) %>
+
+<nav class="breadcrumb" aria-label="Breadcrumb">
+  <a href="/">Katalog</a><span class="sep">/</span>
+  <% if (product.category_name) { %><a href="/?category=<%= product.category_slug %>"><%= product.category_name %></a><span class="sep">/</span><% } %>
+  <span><%= product.title %></span>
+</nav>
+
+<div class="detail-grid">
+  <div>
+    <div class="card demo-frame-wrap">
+      <div class="demo-head">
+        <div class="demo-head-title"><span class="dot"></span>Demo live &mdash; coba langsung di sini</div>
+        <% if (product.demo_url) { %>
+          <a href="<%= product.demo_url %>" target="_blank" rel="noopener" class="btn btn-sm btn-secondary"><%- icon('external') %> Buka di tab baru</a>
+        <% } %>
+      </div>
+      <% if (product.demo_url) { %>
+        <iframe src="<%= product.demo_url %>" loading="lazy" sandbox="allow-scripts allow-same-origin allow-forms" title="Demo <%= product.title %>"></iframe>
+      <% } else { %>
+        <div class="demo-empty"><%- icon('eye', 'icon-lg') %><p style="margin-top:8px">Demo belum tersedia untuk produk ini.</p></div>
+      <% } %>
+    </div>
+
+    <% const features = (product.features || '').split('\n').map(f => f.trim()).filter(Boolean); %>
+    <div class="card card-pad description-block">
+      <h3><%- icon('info') %> Tentang aplikasi ini</h3>
+      <p><%= product.description %></p>
+
+      <% if (features.length) { %>
+        <h3 style="margin-top:24px"><%- icon('sparkles') %> Fitur <%= hasFree && hasPremium ? 'versi Premium' : 'utama' %></h3>
+        <ul class="feature-list">
+          <% features.forEach(f => { %><li><%- icon('checkCircle') %><span><%= f %></span></li><% }) %>
+        </ul>
+      <% } %>
+
+      <h3 style="margin-top:24px"><%- icon('code') %> Detail teknis</h3>
+      <dl class="spec-list">
+        <div><dt>Kategori</dt><dd><%= product.category_name || 'Umum' %></dd></div>
+        <div><dt>Tech stack</dt><dd><%= product.tech_stack || '-' %></dd></div>
+        <div><dt>Format file</dt><dd><%= product.file_name ? product.file_name.split('.').pop().toUpperCase() : 'ZIP' %> arsip source code</dd></div>
+        <div><dt>Lisensi</dt><dd>Sekali bayar, pakai selamanya untuk project sendiri / klien</dd></div>
+        <div><dt>Demo</dt><dd><% if (product.demo_url) { %><a href="<%= product.demo_url %>" target="_blank" rel="noopener">Coba demo live</a><% } else { %>Belum tersedia<% } %></dd></div>
+        <div><dt>Ditambahkan</dt><dd><%= fmtDate(product.created_at).split(',')[0] %></dd></div>
+      </dl>
+    </div>
+
+    <% const freeFeatures = (product.free_features || '').split('\n').map(f => f.trim()).filter(Boolean); %>
+    <% if (hasFree && hasPremium) { %>
+    <div class="card card-pad compare-card">
+      <h3><%- icon('layout') %> Gratis vs Premium</h3>
+      <p class="muted small">Coba versi gratis dulu. Kalau cocok dan mau dipakai serius, upgrade ke Premium.</p>
+      <div class="table-wrap" style="box-shadow:none">
+        <table class="compare-table">
+          <thead><tr><th>Fitur</th><th>Gratis</th><th class="premium-col">Premium</th></tr></thead>
+          <tbody>
+            <% const allFeatures = [...new Set([...freeFeatures, ...features])]; %>
+            <% allFeatures.forEach(f => { const inFree = freeFeatures.includes(f); %>
+              <tr><td><%= f %></td><td><%- inFree ? icon('check', 'yes') : icon('x', 'no') %></td><td class="premium-col"><%- icon('check', 'yes') %></td></tr>
+            <% }) %>
+            <tr><td>Dokumentasi instalasi lengkap</td><td><%- icon('x', 'no') %></td><td class="premium-col"><%- icon('check', 'yes') %></td></tr>
+            <tr><td>Update &amp; perbaikan bug</td><td><span class="muted small">&mdash;</span></td><td class="premium-col"><%= product.update_months || 12 %> bulan</td></tr>
+            <tr><td>Lisensi</td><td><span class="small">Personal / belajar</span></td><td class="premium-col"><span class="small">Komersial (project klien)</span></td></tr>
+            <tr><td>Support</td><td><%- icon('x', 'no') %></td><td class="premium-col"><%- icon('check', 'yes') %></td></tr>
+          </tbody>
+          <tfoot><tr>
+            <td></td>
+            <td><a href="/download/free/<%= product.id %>" class="btn btn-sm btn-secondary"><%- icon('download') %> Gratis</a></td>
+            <td class="premium-col"><% if (paidOrder) { %><span class="badge badge-success">Dimiliki</span><% } else { %><form action="/cart/buy-now/<%= product.id %>" method="POST" style="display:inline"><button type="submit" class="btn btn-sm"><%- icon('zap') %> <%= rp(product.price) %></button></form><% } %></td>
+          </tr></tfoot>
+        </table>
+      </div>
+    </div>
+    <% } %>
+
+    <% if (hasPremium) { %>
+    <div class="card card-pad how-to-buy">
+      <h3><%- icon('cart') %> Cara membeli aplikasi ini</h3>
+      <p class="muted small">Prosesnya otomatis, tidak perlu chat admin.</p>
+      <ol class="buy-steps">
+        <li><span class="buy-num">1</span><div><strong>Coba demonya</strong><span>Mainkan aplikasi di kotak demo di atas sampai yakin cocok.</span></div></li>
+        <li><span class="buy-num">2</span><div><strong>Klik "Beli Sekarang"</strong><span>Atau masukkan ke keranjang kalau mau beli beberapa sekaligus.</span></div></li>
+        <li><span class="buy-num">3</span><div><strong>Masuk / daftar akun</strong><span>Gratis, hanya butuh nama, email &amp; password. Akun dipakai untuk mengakses file-nya nanti.</span></div></li>
+        <li><span class="buy-num">4</span><div><strong>Bayar lewat Midtrans</strong><span>QRIS, transfer VA (BCA, Mandiri, BNI, BRI), GoPay, ShopeePay, atau kartu kredit.</span></div></li>
+        <li><span class="buy-num">5</span><div><strong>Download source code</strong><span>Begitu pembayaran terkonfirmasi (biasanya &lt; 1 menit), tombol download muncul di <a href="/checkout/orders">Pesanan Saya</a>. Bisa diunduh ulang kapan saja.</span></div></li>
+      </ol>
+      <% if (!paidOrder) { %>
+        <div class="how-to-buy-cta">
+          <div><strong><%= rp(product.price) %></strong><span class="muted small"> &middot; premium, sekali bayar</span></div>
+          <% if (inCart) { %>
+            <a href="/cart" class="btn"><%- icon('cart') %> Lanjut ke Keranjang</a>
+          <% } else { %>
+            <form action="/cart/buy-now/<%= product.id %>" method="POST"><button type="submit" class="btn"><%- icon('zap') %> Beli Premium</button></form>
+          <% } %>
+        </div>
+      <% } %>
+    </div>
+    <% } %>
+  </div>
+
+  <aside class="card card-pad detail-panel">
+    <div class="product-cat"><%= product.category_name || 'Umum' %></div>
+    <h1><%= product.title %></h1>
+    <p class="muted" style="font-size:14px"><%= product.short_desc %></p>
+
+    <% if (product.tech_stack) { %>
+      <div class="tech-tags"><% product.tech_stack.split(',').forEach(t => { %><span><%= t.trim() %></span><% }) %></div>
+    <% } %>
+
+    <% if (hasPremium) { %>
+      <div class="detail-price"><%= rp(product.price) %></div>
+      <div class="detail-price-note">Premium &middot; sekali bayar &middot; update <%= product.update_months || 12 %> bulan &middot; lisensi komersial</div>
+    <% } else { %>
+      <div class="detail-price">Gratis</div>
+      <div class="detail-price-note">Produk ini tersedia gratis untuk keperluan belajar &amp; personal</div>
+    <% } %>
+
+    <% if (paidOrder) { %>
+      <div class="owned-box">
+        <div class="owned-title"><%- icon('checkCircle') %> Kamu memiliki versi Premium</div>
+        <div class="help-text" style="margin:4px 0 12px">Order <%= paidOrder.order_code %></div>
+        <% if (product.file_path) { %>
+          <a href="/download/<%= paidOrder.id %>/<%= product.id %>" class="btn btn-success btn-block"><%- icon('download') %> Download Premium</a>
+        <% } else { %>
+          <p class="help-text" style="margin:0">File premium belum diunggah admin. Cek lagi nanti atau hubungi admin.</p>
+        <% } %>
+      </div>
+    <% } else { %>
+      <div class="action-stack">
+        <% if (hasPremium) { %>
+          <% if (inCart) { %>
+            <a href="/cart" class="btn btn-lg btn-block"><%- icon('cart') %> Lanjut ke Keranjang</a>
+            <span class="help-text text-center"><%- icon('check') %> Premium sudah ada di keranjangmu</span>
+          <% } else { %>
+            <form action="/cart/buy-now/<%= product.id %>" method="POST">
+              <button type="submit" class="btn btn-lg btn-block"><%- icon('zap') %> Beli Premium &mdash; <%= rp(product.price) %></button>
+            </form>
+            <form action="/cart/add/<%= product.id %>" method="POST">
+              <button type="submit" class="btn btn-lg btn-block btn-secondary"><%- icon('cart') %> Tambah ke Keranjang</button>
+            </form>
+          <% } %>
+        <% } %>
+        <% if (hasFree) { %>
+          <a href="/download/free/<%= product.id %>" class="btn btn-lg btn-block <%= hasPremium ? 'btn-ghost' : '' %>">
+            <%- icon('download') %> <%= gotFree ? 'Download Ulang Versi Gratis' : 'Download Versi Gratis' %>
+          </a>
+          <% if (!currentUser) { %><span class="help-text text-center">Versi gratis butuh akun (gratis, 30 detik) supaya bisa diunduh ulang kapan saja.</span><% } %>
+        <% } %>
+      </div>
+    <% } %>
+
+    <ul class="include-list">
+      <% if (hasPremium) { %>
+        <li><%- icon('check') %> Premium: source code lengkap + dokumentasi + update <%= product.update_months || 12 %> bulan</li>
+        <li><%- icon('check') %> Lisensi komersial &mdash; boleh dipakai untuk project klien</li>
+        <li><%- icon('check') %> Download langsung setelah lunas, bisa diulang kapan saja</li>
+        <li><%- icon('check') %> Pembayaran aman via Midtrans</li>
+      <% } %>
+      <% if (hasFree) { %><li><%- icon('check') %> Versi gratis untuk dicoba &amp; dipelajari (lisensi personal)</li><% } %>
+    </ul>
+  </aside>
+</div>
+
+<%- include('partials/footer') %>

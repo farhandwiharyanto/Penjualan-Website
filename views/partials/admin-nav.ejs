@@ -1,0 +1,14 @@
+<aside class="admin-side">
+  <div class="card">
+    <div class="admin-side-title">Panel Admin</div>
+    <nav class="admin-nav">
+      <a href="/admin" class="<%= currentPath === '/admin' ? 'active' : '' %>"><%- icon('layout') %> Dashboard</a>
+      <a href="/admin/products" class="<%= currentPath.startsWith('/admin/products') ? 'active' : '' %>"><%- icon('package') %> Produk</a>
+      <a href="/admin/orders" class="<%= currentPath.startsWith('/admin/orders') ? 'active' : '' %>"><%- icon('receipt') %> Pesanan</a>
+    </nav>
+    <div class="admin-side-title" style="margin-top:8px">Lainnya</div>
+    <nav class="admin-nav">
+      <a href="/" target="_blank"><%- icon('external') %> Lihat Toko</a>
+    </nav>
+  </div>
+</aside>

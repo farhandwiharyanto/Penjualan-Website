@@ -1,0 +1,30 @@
+<%- include('partials/header', { title: 'Status Pesanan' }) %>
+
+<%- include('partials/stepper', { step: 3 }) %>
+
+<% const st = statusInfo(order.status); const paid = order.status === 'paid'; %>
+<div class="card result-card">
+  <div class="result-icon <%= paid ? 'success' : 'warn' %>"><%- icon(paid ? 'checkCircle' : 'clock') %></div>
+  <h1 style="font-size:24px"><%= paid ? 'Pembayaran berhasil!' : 'Pesanan dibuat, menunggu pembayaran' %></h1>
+  <p class="muted">Order <span class="order-code"><%= order.order_code %></span> &middot; <%= rp(order.total) %></p>
+  <p><span class="badge badge-<%= st.tone %>"><%= st.label %></span></p>
+
+  <div class="next-steps">
+    <strong>Langkah selanjutnya</strong>
+    <ol>
+      <% if (paid) { %>
+        <li>Buka halaman <strong>Pesanan Saya</strong>.</li>
+        <li>Klik tombol <strong>Download</strong> di produk yang kamu beli.</li>
+      <% } else { %>
+        <li>Selesaikan pembayaran sesuai instruksi di jendela Midtrans.</li>
+        <li>Status akan berubah otomatis menjadi <strong>Lunas</strong> setelah kami menerima konfirmasi (biasanya &lt; 1 menit).</li>
+        <li>Download file dari halaman <strong>Pesanan Saya</strong>.</li>
+      <% } %>
+    </ol>
+  </div>
+
+  <a href="/checkout/orders" class="btn btn-lg btn-block"><%- icon('receipt') %> Lihat Pesanan Saya</a>
+  <p style="margin-top:14px"><a href="/" class="small">Kembali ke katalog</a></p>
+</div>
+
+<%- include('partials/footer') %>

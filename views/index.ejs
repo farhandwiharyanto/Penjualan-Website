@@ -1,0 +1,97 @@
+<%- include('partials/header', { title: 'Beranda' }) %>
+
+<% const isFiltering = activeCategory || q; %>
+<% if (!isFiltering) { %>
+<section class="hero reveal">
+  <div>
+    <span class="hero-badge"><span class="dot"></span> Semua produk punya demo live</span>
+    <h1>Source code siap pakai,<br><em>coba demonya dulu</em><br>sebelum beli.</h1>
+    <p>Klik-klik aplikasinya langsung di browser. Kalau cocok, bayar lewat QRIS, VA bank, atau kartu — file langsung bisa didownload.</p>
+    <div class="hero-actions">
+      <a href="#katalog" class="btn btn-lg btn-light"><%- icon('search') %> Jelajahi Katalog</a>
+      <% if (!currentUser) { %><a href="/auth/register" class="btn btn-lg btn-outline-light">Daftar Gratis</a><% } %>
+    </div>
+    <div class="hero-stats">
+      <div><strong><%= products.length %>+</strong><span>Produk</span></div>
+      <div><strong><%= categories.length %></strong><span>Kategori</span></div>
+      <div><strong>&lt; 1 mnt</strong><span>Download setelah bayar</span></div>
+    </div>
+  </div>
+  <div class="steps">
+    <div class="step reveal reveal-d1"><span class="step-num"><%- icon('play') %></span><div class="step-text"><strong>1. Coba demo live</strong><span>Klik "Lihat Aplikasi" dan mainkan demonya langsung di browser.</span></div></div>
+    <div class="step reveal reveal-d2"><span class="step-num"><%- icon('wallet') %></span><div class="step-text"><strong>2. Bayar dengan aman</strong><span>Checkout via Midtrans — QRIS, VA bank, e-wallet, kartu.</span></div></div>
+    <div class="step reveal reveal-d3"><span class="step-num"><%- icon('download') %></span><div class="step-text"><strong>3. Download source code</strong><span>File tersedia di "Pesanan Saya" begitu pembayaran lunas.</span></div></div>
+  </div>
+</section>
+<% } %>
+
+<section id="katalog">
+  <div class="section-head">
+    <div>
+      <h2><% if (q) { %>Hasil untuk &ldquo;<%= q %>&rdquo;<% } else if (activeCategory) { %><%= (categories.find(c => c.slug === activeCategory) || {}).name || 'Kategori' %><% } else { %>Semua Produk<% } %></h2>
+      <p class="muted small" style="margin:0"><%= products.length %> produk<% if (isFiltering) { %> &middot; <a href="/">Reset filter</a><% } %></p>
+    </div>
+    <form method="GET" action="/" class="toolbar" style="margin:0">
+      <% if (q) { %><input type="hidden" name="q" value="<%= q %>"><% } %>
+      <% if (activeCategory) { %><input type="hidden" name="category" value="<%= activeCategory %>"><% } %>
+      <select name="sort" class="sort-select" onchange="this.form.submit()" aria-label="Urutkan">
+        <option value="newest" <%= sort === 'newest' ? 'selected' : '' %>>Terbaru</option>
+        <option value="cheapest" <%= sort === 'cheapest' ? 'selected' : '' %>>Harga terendah</option>
+        <option value="priciest" <%= sort === 'priciest' ? 'selected' : '' %>>Harga tertinggi</option>
+        <option value="name" <%= sort === 'name' ? 'selected' : '' %>>Nama A-Z</option>
+      </select>
+    </form>
+  </div>
+
+  <div class="filters" style="margin-bottom:22px">
+    <a href="/?sort=<%= sort %><%= q ? '&q=' + encodeURIComponent(q) : '' %>#katalog" class="chip <%= activeCategory === '' ? 'active' : '' %>">Semua</a>
+    <% categories.forEach(c => { %>
+      <a href="/?category=<%= c.slug %>&sort=<%= sort %><%= q ? '&q=' + encodeURIComponent(q) : '' %>#katalog" class="chip <%= activeCategory === c.slug ? 'active' : '' %>"><%= c.name %></a>
+    <% }) %>
+  </div>
+
+  <% if (products.length === 0) { %>
+    <div class="empty-state">
+      <%- icon('search') %>
+      <h3>Tidak ada produk yang cocok</h3>
+      <p>Coba kata kunci lain atau lihat semua kategori.</p>
+      <a href="/" class="btn btn-secondary">Lihat Semua Produk</a>
+    </div>
+  <% } else { %>
+    <div class="product-grid">
+      <% products.forEach((p, i) => { %>
+        <article class="product-card reveal reveal-d<%= Math.min(i + 1, 6) %>">
+          <a href="/product/<%= p.slug %>" class="product-thumb" aria-label="<%= p.title %>">
+            <% if (p.thumbnail) { %>
+              <img src="/public/uploads/<%= p.thumbnail %>" alt="<%= p.title %>" loading="lazy">
+            <% } else { %>
+              <span class="thumb-bg"></span>
+              <span class="browser-mock" aria-hidden="true">
+                <span class="browser-bar"><i></i><i></i><i></i><span class="url"></span></span>
+                <span class="browser-body"><span class="blk tall"></span><span class="blk accent"></span><span class="blk"></span><span class="blk"></span></span>
+              </span>
+            <% } %>
+            <% if (p.demo_url) { %><span class="demo-pill"><span class="dot"></span>Demo tersedia</span><% } %>
+            <% if (p.free_file_path) { %><span class="free-pill">Gratis tersedia</span><% } %>
+          </a>
+          <div class="product-body">
+            <div class="product-cat"><%= p.category_name || 'Umum' %></div>
+            <h3 class="product-title"><a href="/product/<%= p.slug %>"><%= p.title %></a></h3>
+            <div class="product-desc"><%= p.short_desc %></div>
+            <% if (p.tech_stack) { %>
+              <div class="tech-mini"><% p.tech_stack.split(',').slice(0, 3).forEach(t => { %><span><%= t.trim() %></span><% }) %></div>
+            <% } %>
+          </div>
+          <div class="product-foot">
+            <div class="product-price">
+              <% if (p.price > 0) { %><%= rp(p.price) %><% if (p.free_file_path) { %><span class="price-sub">premium</span><% } %><% } else { %>Gratis<% } %>
+            </div>
+            <a href="/product/<%= p.slug %>" class="btn btn-sm"><%- icon('eye') %> Lihat Aplikasi</a>
+          </div>
+        </article>
+      <% }) %>
+    </div>
+  <% } %>
+</section>
+
+<%- include('partials/footer') %>

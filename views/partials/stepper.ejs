@@ -1,0 +1,13 @@
+<%
+/* Stepper alur checkout. Pakai: include('partials/stepper', { step: 1 })  (1=Keranjang, 2=Pembayaran, 3=Selesai) */
+const steps = ['Keranjang', 'Pembayaran', 'Selesai'];
+%>
+<nav class="stepper" aria-label="Progress checkout">
+  <% steps.forEach((label, i) => { const n = i + 1; const state = n < step ? 'done' : n === step ? 'active' : ''; %>
+    <% if (i > 0) { %><span class="stepper-line <%= n <= step ? 'done' : '' %>"></span><% } %>
+    <span class="stepper-item <%= state %>">
+      <span class="stepper-num"><% if (state === 'done') { %><%- icon('check') %><% } else { %><%= n %><% } %></span>
+      <span class="label"><%= label %></span>
+    </span>
+  <% }) %>
+</nav>

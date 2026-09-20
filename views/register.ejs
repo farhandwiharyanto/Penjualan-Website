@@ -1,0 +1,28 @@
+<%- include('partials/header', { title: 'Daftar' }) %>
+
+<div class="auth-layout">
+  <%- include('partials/auth-side') %>
+  <div class="auth-form">
+    <h1>Buat akun baru</h1>
+    <p class="lead">Gratis dan cuma butuh 30 detik.</p>
+    <% if (error) { %><div class="error-box"><%- icon('alert') %><span><%= error %></span></div><% } %>
+    <form action="/auth/register" method="POST">
+      <div class="form-group">
+        <label for="name">Nama</label>
+        <input type="text" id="name" name="name" placeholder="Nama lengkap" autocomplete="name" value="<%= typeof values !== 'undefined' ? values.name : '' %>" required autofocus>
+      </div>
+      <div class="form-group">
+        <label for="email">Email</label>
+        <input type="email" id="email" name="email" placeholder="nama@email.com" autocomplete="email" value="<%= typeof values !== 'undefined' ? values.email : '' %>" required>
+      </div>
+      <div class="form-group">
+        <label for="password">Password</label>
+        <input type="password" id="password" name="password" placeholder="Minimal 6 karakter" minlength="6" autocomplete="new-password" required>
+      </div>
+      <button type="submit" class="btn btn-lg btn-block">Daftar</button>
+    </form>
+    <p class="text-center small" style="margin-top:20px">Sudah punya akun? <a href="/auth/login"><strong>Masuk</strong></a></p>
+  </div>
+</div>
+
+<%- include('partials/footer') %>

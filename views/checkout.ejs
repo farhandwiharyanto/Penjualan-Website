@@ -1,0 +1,39 @@
+<%- include('partials/header', { title: 'Pembayaran' }) %>
+
+<%- include('partials/stepper', { step: 2 }) %>
+
+<div class="card card-pad result-card" style="text-align:left">
+  <div class="text-center" style="margin-bottom:20px">
+    <div class="result-icon primary"><%- icon('wallet') %></div>
+    <h1 style="font-size:22px">Selesaikan Pembayaran</h1>
+    <p class="muted small">Order <span class="order-code"><%= orderCode %></span></p>
+  </div>
+
+  <% items.forEach(p => { %>
+    <div class="summary-row"><span><%= p.title %></span><span><%= rp(p.price) %></span></div>
+  <% }) %>
+  <div class="summary-total"><span>Total</span><span><%= rp(total) %></span></div>
+
+  <button id="pay-button" class="btn btn-lg btn-block"><%- icon('wallet') %> Buka Jendela Pembayaran</button>
+  <p class="help-text text-center" style="margin-top:12px">Jendela pembayaran terbuka otomatis. Kalau tertutup, klik tombol di atas untuk membukanya lagi.</p>
+  <div class="trust"><%- icon('shield') %> Diproses aman oleh Midtrans</div>
+  <p class="text-center" style="margin-top:16px"><a href="/cart" class="small"><%- icon('arrowLeft') %> Kembali ke keranjang</a></p>
+</div>
+
+<script src="<%= isProduction ? 'https://app.midtrans.com/snap/snap.js' : 'https://app.sandbox.midtrans.com/snap/snap.js' %>"
+        data-client-key="<%= clientKey %>"></script>
+<script>
+  var payBtn = document.getElementById('pay-button');
+  function openSnap() {
+    window.snap.pay('<%= snapToken %>', {
+      onSuccess: function () { window.location.href = '/checkout/finish?order=<%= orderCode %>'; },
+      onPending: function () { window.location.href = '/checkout/finish?order=<%= orderCode %>'; },
+      onError: function () { UI.alert({ title: 'Pembayaran gagal', message: 'Transaksi tidak dapat diproses. Coba lagi atau pilih metode pembayaran lain.', tone: 'warn' }); },
+      onClose: function () { /* user menutup popup tanpa membayar - order tetap pending */ }
+    });
+  }
+  payBtn.addEventListener('click', openSnap);
+  window.addEventListener('load', openSnap); // buka otomatis begitu halaman dimuat
+</script>
+
+<%- include('partials/footer') %>

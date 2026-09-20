@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <script>
+    // Terapkan tema sebelum render agar tidak berkedip: pilihan user > preferensi sistem
+    (function () {
+      try {
+        var t = localStorage.getItem('theme') || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+        document.documentElement.setAttribute('data-theme', t);
+      } catch (e) {}
+    })();
+  </script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title><%= typeof title !== 'undefined' ? title + ' · SourceMarket' : 'SourceMarket' %></title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/public/css/style.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="container topbar-inner">
+      <a href="/" class="logo"><span class="logo-mark"><%- icon('code') %></span><span class="logo-text">Source<em>Market</em></span></a>
+
+      <form class="search-form" action="/" method="GET" role="search">
+        <%- icon('search') %>
+        <input type="text" name="q" placeholder="Cari source code, template, aplikasi..." value="<%= typeof q !== 'undefined' ? q : '' %>" aria-label="Cari">
+        <button type="submit">Cari</button>
+      </form>
+
+      <nav class="nav" aria-label="Navigasi utama">
+        <button type="button" class="nav-link theme-toggle" id="theme-toggle" title="Ganti tema terang/gelap" aria-label="Ganti tema">
+          <span class="moon"><%- icon('moon') %></span><span class="sun"><%- icon('sun') %></span>
+        </button>
+        <a href="/cart" class="nav-link <%= currentPath.startsWith('/cart') ? 'active' : '' %>" title="Keranjang">
+          <%- icon('cart') %><span class="label">Keranjang</span>
+          <% if (cartCount > 0) { %><span class="cart-badge"><%= cartCount %></span><% } %>
+        </a>
+        <% if (currentUser) { %>
+          <a href="/checkout/orders" class="nav-link <%= currentPath.startsWith('/checkout/orders') ? 'active' : '' %>" title="Pesanan Saya">
+            <%- icon('receipt') %><span class="label">Pesanan</span>
+          </a>
+          <% if (currentUser.role === 'admin') { %>
+            <a href="/admin" class="nav-link <%= currentPath.startsWith('/admin') ? 'active' : '' %>" title="Panel Admin">
+              <%- icon('shield') %><span class="label">Admin</span>
+            </a>
+          <% } %>
+          <span class="nav-divider"></span>
+          <span class="user-chip"><span class="avatar"><%= currentUser.name.charAt(0) %></span><span class="name"><%= currentUser.name.split(' ')[0] %></span></span>
+          <form action="/auth/logout" method="POST" style="display:inline">
+            <button type="submit" class="nav-link" title="Keluar"><%- icon('logout') %></button>
+          </form>
+        <% } else { %>
+          <a href="/auth/login" class="nav-link">Masuk</a>
+          <a href="/auth/register" class="btn btn-sm">Daftar Gratis</a>
+        <% } %>
+      </nav>
+    </div>
+  </header>
+  <main class="container">
+  <% if (flash) { %>
+    <div class="flash flash-<%= flash.type %>" role="status">
+      <%- icon(flash.type === 'success' ? 'checkCircle' : flash.type === 'error' ? 'alert' : 'info') %>
+      <span><%= flash.message %></span>
+      <% if (flash.type === 'success' && flash.message.includes('keranjang')) { %><a href="/cart">Lihat keranjang &rarr;</a><% } %>
+    </div>
+  <% } %>

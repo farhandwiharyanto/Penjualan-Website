@@ -1,0 +1,141 @@
+<%- include('../partials/header', { title: product ? 'Edit Produk' : 'Tambah Produk' }) %>
+
+<div class="admin-shell">
+  <%- include('../partials/admin-nav') %>
+  <section>
+    <div class="admin-head">
+      <div>
+        <nav class="breadcrumb" style="margin-bottom:4px"><a href="/admin/products">Produk</a><span class="sep">/</span><span><%= product ? 'Edit' : 'Baru' %></span></nav>
+        <h1><%= product ? 'Edit Produk' : 'Tambah Produk' %></h1>
+      </div>
+      <% if (product) { %><a href="/product/<%= product.slug %>" target="_blank" class="btn btn-sm btn-secondary"><%- icon('external') %> Lihat halaman produk</a><% } %>
+    </div>
+
+    <% if (!product) { %>
+    <div class="card card-pad guide-card" style="max-width:720px;margin-bottom:20px">
+      <strong><%- icon('info') %> Siapkan 3 hal sebelum mengisi form:</strong>
+      <ul class="guide-list">
+        <li><strong>URL demo</strong> yang sudah online &mdash; pembeli mencoba lewat sini.</li>
+        <li><strong>File zip premium</strong> (source lengkap + README) dan, jika ada, <strong>zip versi gratis</strong> yang fiturnya dibatasi.</li>
+        <li><strong>Thumbnail</strong> (screenshot aplikasi, rasio 16:10) supaya kartu produk menarik.</li>
+      </ul>
+    </div>
+    <% } %>
+
+    <form action="<%= product ? '/admin/products/' + product.id + '?_method=PUT' : '/admin/products' %>" method="POST" enctype="multipart/form-data" class="card card-pad" style="max-width:720px">
+
+      <div class="form-section">Informasi dasar</div>
+      <div class="form-group">
+        <label for="title">Judul produk</label>
+        <input type="text" id="title" name="title" value="<%= product ? product.title : '' %>" placeholder="mis. POS Kasir Toko Sederhana" required>
+      </div>
+      <div class="form-group">
+        <label for="category_id">Kategori</label>
+        <select id="category_id" name="category_id">
+          <option value="">- Pilih kategori -</option>
+          <% categories.forEach(c => { %>
+            <option value="<%= c.id %>" <%= product && product.category_id === c.id ? 'selected' : '' %>><%= c.name %></option>
+          <% }) %>
+        </select>
+      </div>
+      <div class="form-group">
+        <label for="short_desc">Deskripsi singkat</label>
+        <input type="text" id="short_desc" name="short_desc" maxlength="140" value="<%= product ? product.short_desc : '' %>" placeholder="Satu kalimat yang tampil di kartu produk">
+      </div>
+      <div class="form-group">
+        <label for="description">Deskripsi lengkap</label>
+        <textarea id="description" name="description" rows="6" placeholder="Fitur, cara instalasi, apa yang didapat pembeli..."><%= product ? product.description : '' %></textarea>
+      </div>
+      <div class="form-group">
+        <label for="tech_stack">Tech stack</label>
+        <input type="text" id="tech_stack" name="tech_stack" placeholder="Laravel, React, MySQL" value="<%= product ? product.tech_stack : '' %>">
+        <p class="help-text">Pisahkan dengan koma. Tampil sebagai tag di halaman produk.</p>
+      </div>
+
+      <div class="form-section">Demo &amp; media</div>
+      <div class="form-group">
+        <label for="demo_url">URL demo</label>
+        <input type="url" id="demo_url" name="demo_url" placeholder="https://demo-kamu.com" value="<%= product ? product.demo_url : '' %>">
+        <p class="help-text">Di-embed sebagai iframe di halaman produk. Deploy demo ke Vercel/Netlify/VPS lalu tempel URL-nya di sini. Pastikan situs demo tidak mengirim header <code>X-Frame-Options: DENY</code> atau CSP <code>frame-ancestors</code> yang memblokir.</p>
+      </div>
+      <div class="form-group">
+        <label for="thumbnail">Thumbnail</label>
+        <input type="file" id="thumbnail" name="thumbnail" accept="image/*">
+        <% if (product && product.thumbnail) { %>
+          <div class="file-current"><%- icon('image') %> <%= product.thumbnail %> <span class="muted">&mdash; upload baru untuk mengganti</span></div>
+        <% } else { %>
+          <p class="help-text">Disarankan rasio 16:10, mis. 800&times;500 px.</p>
+        <% } %>
+      </div>
+
+      <div class="form-section">Versi Premium (berbayar)</div>
+      <p class="help-text" style="margin:-6px 0 14px">Kosongkan harga (0) jika produk ini hanya versi gratis.</p>
+      <div class="form-row">
+        <div class="form-group">
+          <label for="price">Harga premium (Rp)</label>
+          <input type="number" id="price" name="price" min="0" step="1000" value="<%= product ? product.price : '' %>" placeholder="350000">
+        </div>
+        <div class="form-group">
+          <label for="update_months">Hak update (bulan)</label>
+          <input type="number" id="update_months" name="update_months" min="0" value="<%= product ? (product.update_months ?? 12) : 12 %>">
+        </div>
+      </div>
+      <div class="form-group">
+        <label for="features">Fitur premium</label>
+        <textarea id="features" name="features" rows="5" placeholder="Manajemen produk &amp; stok&#10;Transaksi kasir dengan barcode&#10;Laporan penjualan harian/bulanan"><%= product ? (product.features || '') : '' %></textarea>
+        <p class="help-text">Satu fitur per baris. Fitur yang juga ada di versi gratis cukup ditulis di kedua kolom &mdash; tabel perbandingan dibuat otomatis.</p>
+      </div>
+      <div class="form-group">
+        <label for="product_file">File source code premium</label>
+        <input type="file" id="product_file" name="product_file" accept=".zip,.rar,.7z,.tar,.gz,.tgz">
+        <% if (product && product.file_path) { %>
+          <div class="file-current"><%- icon('file') %> <strong><%= product.file_name || product.file_path %></strong> <span class="muted">&mdash; upload baru untuk mengganti</span></div>
+        <% } else { %>
+          <p class="help-text">zip / rar / 7z / tar.gz, maks 500 MB. Privat &mdash; hanya untuk pembeli yang sudah lunas.</p>
+        <% } %>
+      </div>
+
+      <div class="form-section">Versi Gratis (opsional)</div>
+      <p class="help-text" style="margin:-6px 0 14px">Versi terbatas yang bisa diunduh siapa saja setelah login. Ini "umpan" untuk premium: cukup berguna untuk dicoba, tapi jelas kurang untuk dipakai serius.</p>
+      <div class="form-group">
+        <label for="free_features">Fitur versi gratis</label>
+        <textarea id="free_features" name="free_features" rows="4" placeholder="Manajemen produk &amp; stok&#10;Transaksi kasir dasar"><%= product ? (product.free_features || '') : '' %></textarea>
+        <p class="help-text">Satu fitur per baris. Biasanya subset dari fitur premium.</p>
+      </div>
+      <div class="form-group">
+        <label for="free_file">File source code gratis</label>
+        <input type="file" id="free_file" name="free_file" accept=".zip,.rar,.7z,.tar,.gz,.tgz">
+        <% if (product && product.free_file_path) { %>
+          <div class="file-current"><%- icon('file') %> <strong><%= product.free_file_name || product.free_file_path %></strong> <span class="muted">&mdash; upload baru untuk mengganti</span></div>
+          <label style="font-weight:500;margin-top:8px"><input type="checkbox" name="remove_free_file" value="1"> Hapus versi gratis (produk jadi premium saja)</label>
+        <% } else { %>
+          <p class="help-text">Kosongkan jika tidak menyediakan versi gratis.</p>
+        <% } %>
+      </div>
+
+      <% if (product) { %>
+        <div class="form-section">Visibilitas</div>
+        <div class="form-group">
+          <label style="font-weight:500"><input type="checkbox" name="is_active" value="1" <%= product.is_active ? 'checked' : '' %>> Tampilkan di katalog</label>
+          <p class="help-text">Nonaktifkan untuk menyembunyikan produk tanpa menghapusnya. Pembeli lama tetap bisa download.</p>
+        </div>
+      <% } %>
+
+      <div class="form-actions">
+        <a href="/admin/products" class="btn btn-secondary">Batal</a>
+        <button type="submit" class="btn"><%- icon('check') %> <%= product ? 'Simpan Perubahan' : 'Tambah Produk' %></button>
+      </div>
+    </form>
+
+    <div class="card card-pad" style="max-width:720px;margin-top:20px">
+      <h3>Kategori baru</h3>
+      <p class="muted small">Tambah kategori cepat tanpa meninggalkan halaman ini.</p>
+      <form action="/admin/categories" method="POST" class="quick-add">
+        <input type="text" name="name" placeholder="Nama kategori" required style="padding:10px 13px;border:1px solid var(--border-strong);border-radius:8px;font:inherit;font-size:14px">
+        <button type="submit" class="btn btn-secondary"><%- icon('plus') %> Tambah</button>
+      </form>
+    </div>
+  </section>
+</div>
+
+<%- include('../partials/footer') %>

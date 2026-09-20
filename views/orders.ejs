@@ -1,0 +1,74 @@
+<%- include('partials/header', { title: 'Pesanan Saya' }) %>
+
+<div class="section-head">
+  <div><h1 style="font-size:24px;margin:0">Pesanan Saya</h1><p class="muted small" style="margin:2px 0 0">Riwayat pembelian dan file yang bisa kamu download.</p></div>
+</div>
+
+<% if (freeDownloads.length) { %>
+  <div class="section-head" style="margin-top:8px"><h3 style="margin:0">Versi gratis yang kamu unduh</h3></div>
+  <div class="card" style="margin-bottom:28px">
+    <ul class="order-items">
+      <% freeDownloads.forEach(f => { %>
+        <li>
+          <div><a href="/product/<%= f.slug %>" style="color:inherit;font-weight:600"><%= f.title %></a><br><span class="muted small">Terakhir diunduh <%= fmtDate(f.last_at) %></span></div>
+          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+            <% if (f.free_file_path) { %><a href="/download/free/<%= f.id %>" class="btn btn-sm btn-secondary"><%- icon('download') %> Unduh ulang</a><% } %>
+            <% if (f.owns_premium) { %><span class="badge badge-success">Premium dimiliki</span>
+            <% } else if (f.price > 0) { %><form action="/cart/buy-now/<%= f.id %>" method="POST"><button type="submit" class="btn btn-sm"><%- icon('zap') %> Upgrade Premium &mdash; <%= rp(f.price) %></button></form><% } %>
+          </div>
+        </li>
+      <% }) %>
+    </ul>
+    <% if (freeDownloads.some(f => !f.owns_premium && f.price > 0)) { %>
+      <div class="order-foot"><span class="muted"><%- icon('sparkles') %> Premium: fitur lengkap, dokumentasi, update &amp; lisensi komersial.</span></div>
+    <% } %>
+  </div>
+  <div class="section-head"><h3 style="margin:0">Pembelian Premium</h3></div>
+<% } %>
+
+<% if (orders.length === 0) { %>
+  <div class="empty-state">
+    <%- icon('receipt') %>
+    <h3>Belum ada pesanan</h3>
+    <p>Produk yang kamu beli akan muncul di sini beserta tombol download-nya.</p>
+    <a href="/" class="btn">Mulai Belanja</a>
+  </div>
+<% } else { %>
+  <% orders.forEach(o => { const st = statusInfo(o.status); %>
+    <div class="card order-card">
+      <div class="order-head">
+        <div>
+          <span class="order-code"><%= o.order_code %></span>
+          <div class="order-meta"><%= fmtDate(o.created_at) %> &middot; <%= o.items.length %> produk &middot; <strong><%= rp(o.total) %></strong></div>
+        </div>
+        <span class="badge badge-<%= st.tone %>"><%= st.label %></span>
+      </div>
+      <ul class="order-items">
+        <% o.items.forEach(it => { %>
+          <li>
+            <span><%= it.title %></span>
+            <% if (o.status === 'paid') { %>
+              <% if (it.file_path) { %>
+                <a href="/download/<%= o.id %>/<%= it.product_id %>" class="btn btn-sm btn-success"><%- icon('download') %> Download</a>
+              <% } else { %>
+                <span class="badge badge-muted">File belum tersedia</span>
+              <% } %>
+            <% } else { %>
+              <span class="muted small"><%= rp(it.price) %></span>
+            <% } %>
+          </li>
+        <% }) %>
+      </ul>
+      <% if (o.status === 'pending') { %>
+        <div class="order-foot">
+          <span class="order-hint"><%- icon('clock') %> Menunggu pembayaran. Tombol download muncul otomatis setelah lunas.</span>
+        </div>
+      <% } else if (o.status === 'paid' && o.paid_at) { %>
+        <% const upd = Math.max(...o.items.map(it => it.update_months || 12)); const until = new Date(o.paid_at); until.setMonth(until.getMonth() + upd); %>
+        <div class="order-foot"><span class="muted">Lunas <%= fmtDate(o.paid_at) %></span><span class="muted">Hak update sampai <strong><%= until.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }) %></strong> &middot; download ulang kapan saja</span></div>
+      <% } %>
+    </div>
+  <% }) %>
+<% } %>
+
+<%- include('partials/footer') %>

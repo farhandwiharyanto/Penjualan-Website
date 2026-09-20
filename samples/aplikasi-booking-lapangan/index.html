@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Booking Lapangan Olahraga</title>
+<link rel="stylesheet" href="assets/style.css">
+<style>
+.slots{display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:8px}
+.slot{padding:10px;border:1px solid var(--bd);border-radius:10px;text-align:center;cursor:pointer;background:var(--sf)}
+.slot:hover{border-color:var(--p)}.slot.taken{opacity:.45;cursor:not-allowed;text-decoration:line-through}.slot.sel{background:var(--p);color:#fff;border-color:var(--p)}
+.slot small{display:block;color:var(--mu);font-size:11px}.slot.sel small{color:#c7d2fe}
+.days{display:flex;gap:6px;overflow-x:auto;padding-bottom:4px}.day{min-width:64px;padding:8px;border:1px solid var(--bd);border-radius:10px;text-align:center;cursor:pointer;background:var(--sf)}.day.on{background:var(--p);color:#fff;border-color:var(--p)}.day small{display:block;font-size:11px;opacity:.75}
+.toast{position:fixed;top:16px;right:16px;background:#111827;color:#fff;padding:10px 14px;border-radius:10px;font-size:13px;z-index:20;box-shadow:0 8px 24px rgba(0,0,0,.25)}
+</style>
+</head>
+<body>
+<div class="app">
+  <aside class="side">
+    <div class="brand">Lapangan<span>Ku</span> <span class="badge __TIER_BADGE__" style="font-size:10px">__TIER_LABEL__</span></div>
+    <nav class="nav">
+      <a data-page="booking">📅 Booking</a>
+      <a data-page="riwayat" class="__LOCK__">🕘 Riwayat Saya</a>
+      <a data-page="admin" class="__LOCK__">🛠 Panel Pengelola</a>
+    </nav>
+    <div style="margin-top:18px;padding:0 10px"><button class="btn sec sm" id="theme">🌓 Tema</button></div>
+  </aside>
+  <main class="main">
+    <section class="page" id="page-booking">
+      <div class="head"><h1>Booking Lapangan</h1><select id="court" style="width:auto"></select></div>
+      <div class="card"><h2>Pilih tanggal</h2><div class="days" id="days"></div></div>
+      <div class="card"><div class="head" style="margin-bottom:10px"><h2 style="margin:0">Jam tersedia <span class="mu" id="date-label"></span></h2><span class="mu" id="price"></span></div><div class="slots" id="slots"></div></div>
+      <div class="card" id="form" hidden>
+        <h2>Konfirmasi booking</h2>
+        <div class="grid g3"><div><label>Nama</label><input id="b-name"></div><div><label>No. WhatsApp</label><input id="b-phone" placeholder="08xxxx"></div><div><label>Catatan</label><input id="b-note"></div></div>
+        <div class="row" style="justify-content:space-between;margin-top:12px"><strong id="summary"></strong><button class="btn" id="b-submit">Konfirmasi &amp; Bayar</button></div>
+      </div>
+    </section>
+    <section class="page" id="page-riwayat" hidden><div class="head"><h1>Riwayat Saya</h1></div><div id="history">__LOCK_RIWAYAT__</div></section>
+    <section class="page" id="page-admin" hidden><div class="head"><h1>Panel Pengelola</h1></div><div id="admin">__LOCK_ADMIN__</div></section>
+  </main>
+</div>
+__FREE_MARK__
+<script>const APP_KEY = 'bookinglap'; const TIER = '__TIER__'; const UPGRADE_URL = '__UPGRADE_URL__';</script>
+<script src="assets/shared.js"></script>
+<script>
+let courts = DB.get('courts', [{ id: 'f1', name: 'Futsal A (Vinyl)', price: 120000 }, { id: 'f2', name: 'Futsal B (Rumput)', price: 150000 }, { id: 'b1', name: 'Badminton 1', price: 60000 }]);
+let bookings = DB.get('bookings', []);
+const HOURS = Array.from({ length: 15 }, (_, i) => 8 + i); // 08:00 - 22:00
+let selDate = new Date().toISOString().slice(0, 10), selHours = [];
+const dkey = (c, d, h) => `${c}|${d}|${h}`;
+const taken = (c, d, h) => bookings.some(b => b.court === c && b.date === d && b.hours.includes(h) && b.status !== 'batal');
+function toast(m) { const t = document.createElement('div'); t.className = 'toast'; t.textContent = m; document.body.appendChild(t); setTimeout(() => t.remove(), 3000); }
+
+function renderCourts() { $('#court').innerHTML = courts.map(c => `<option value="${c.id}">${esc(c.name)} · ${rp(c.price)}/jam</option>`).join(''); }
+function renderDays() {
+  $('#days').innerHTML = Array.from({ length: 14 }, (_, i) => { const d = new Date(Date.now() + i * 86400000); const iso = d.toISOString().slice(0, 10); return `<div class="day ${iso === selDate ? 'on' : ''}" onclick="pickDate('${iso}')"><small>${d.toLocaleDateString('id-ID', { weekday: 'short' })}</small><strong>${d.getDate()}</strong><small>${d.toLocaleDateString('id-ID', { month: 'short' })}</small></div>`; }).join('');
+}
+function pickDate(d) { selDate = d; selHours = []; renderDays(); renderSlots(); }
+function renderSlots() {
+  const c = $('#court').value, court = courts.find(x => x.id === c);
+  $('#date-label').textContent = '· ' + new Date(selDate).toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long' });
+  $('#price').textContent = rp(court.price) + ' / jam';
+  const nowH = new Date().getHours(), today = selDate === new Date().toISOString().slice(0, 10);
+  $('#slots').innerHTML = HOURS.map(h => { const t = taken(c, selDate, h) || (today && h <= nowH); return `<div class="slot ${t ? 'taken' : ''} ${selHours.includes(h) ? 'sel' : ''}" onclick="${t ? '' : `pickHour(${h})`}">${String(h).padStart(2, '0')}:00<small>${t ? 'terisi' : 'tersedia'}</small></div>`; }).join('');
+  $('#form').hidden = !selHours.length;
+  if (selHours.length) $('#summary').textContent = `${selHours.length} jam (${selHours.map(h => h + ':00').join(', ')}) · ${rp(selHours.length * court.price)}`;
+}
+function pickHour(h) { selHours = selHours.includes(h) ? selHours.filter(x => x !== h) : [...selHours, h].sort((a, b) => a - b); renderSlots(); }
+$('#court').onchange = () => { selHours = []; renderSlots(); };
+$('#b-submit').onclick = () => {
+  const name = $('#b-name').value.trim(), phone = $('#b-phone').value.trim(); if (!name || !phone) return alert('Nama dan nomor WhatsApp wajib diisi.');
+  const court = courts.find(x => x.id === $('#court').value);
+  const b = { id: 'BK-' + Date.now().toString().slice(-6), court: court.id, courtName: court.name, date: selDate, hours: [...selHours], name, phone, note: $('#b-note').value, total: selHours.length * court.price, status: 'dikonfirmasi', at: new Date().toISOString() };
+  bookings.push(b); DB.set('bookings', bookings); DB.set('me', { name, phone });
+  selHours = []; renderSlots(); toast(`✅ Booking ${b.id} dikonfirmasi. ${TIER === 'premium' ? 'Pengingat akan dikirim 1 jam sebelum jadwal.' : ''}`);
+  if (TIER === 'premium') { renderHistory(); scheduleReminder(b); }
+};
+const me = DB.get('me', {}); $('#b-name').value = me.name || ''; $('#b-phone').value = me.phone || '';
+
+<!--PREMIUM-->
+// ---------- PREMIUM: riwayat, notifikasi, panel pengelola ----------
+function renderHistory() {
+  const mine = bookings.filter(b => b.phone === ($('#b-phone').value || me.phone)).sort((a, b) => b.at.localeCompare(a.at));
+  $('#history').innerHTML = `<div class="card"><table><thead><tr><th>ID</th><th>Lapangan</th><th>Jadwal</th><th class="r">Total</th><th>Status</th><th></th></tr></thead><tbody>${mine.map(b => `<tr><td><strong>${b.id}</strong></td><td>${esc(b.courtName)}</td><td>${b.date} · ${b.hours.map(h => h + ':00').join(', ')}</td><td class="r">${rp(b.total)}</td><td><span class="badge ${b.status === 'batal' ? 'dg' : b.status === 'selesai' ? 'ok' : 'wn'}">${b.status}</span></td><td class="r">${b.status === 'dikonfirmasi' ? `<button class="btn dg sm" onclick="cancelBooking('${b.id}')">Batalkan</button>` : ''}</td></tr>`).join('') || '<tr><td class="mu" colspan="6">Belum ada booking dengan nomor ini.</td></tr>'}</tbody></table></div>`;
+}
+function cancelBooking(id) { const b = bookings.find(x => x.id === id); b.status = 'batal'; DB.set('bookings', bookings); renderHistory(); renderSlots(); toast('Booking dibatalkan.'); }
+function scheduleReminder(b) { // simulasi push notification (di produksi: Firebase Cloud Messaging / WhatsApp API)
+  if ('Notification' in window && Notification.permission !== 'denied') Notification.requestPermission().then(p => { if (p === 'granted') setTimeout(() => new Notification('Pengingat booking', { body: `${b.courtName} · ${b.date} jam ${b.hours[0]}:00` }), 5000); });
+}
+function renderAdmin() {
+  const today = new Date().toISOString().slice(0, 10), todayB = bookings.filter(b => b.date === today && b.status !== 'batal');
+  const rev = bookings.filter(b => b.status !== 'batal').reduce((a, b) => a + b.total, 0);
+  $('#admin').innerHTML = `<div class="grid g3"><div class="card stat"><div class="n">${todayB.length}</div><div class="l">Booking hari ini</div></div><div class="card stat"><div class="n">${todayB.reduce((a, b) => a + b.hours.length, 0)} jam</div><div class="l">Jam terisi hari ini</div></div><div class="card stat"><div class="n">${rp(rev)}</div><div class="l">Total pendapatan</div></div></div>
+  <div class="card"><h2>Kelola lapangan</h2><div class="row"><input id="c-name" placeholder="Nama lapangan" style="width:220px"><input id="c-price" type="number" placeholder="Harga/jam" style="width:140px"><button class="btn" id="c-add">Tambah</button></div><table style="margin-top:10px">${courts.map(c => `<tr><td>${esc(c.name)}</td><td class="r">${rp(c.price)}/jam</td><td class="r"><button class="btn dg sm" onclick="delCourt('${c.id}')">Hapus</button></td></tr>`).join('')}</table></div>
+  <div class="card"><h2>Semua booking</h2><table><thead><tr><th>ID</th><th>Pelanggan</th><th>Lapangan</th><th>Jadwal</th><th class="r">Total</th><th>Status</th><th></th></tr></thead><tbody>${[...bookings].reverse().map(b => `<tr><td>${b.id}</td><td>${esc(b.name)}<br><span class="mu">${esc(b.phone)}</span></td><td>${esc(b.courtName)}</td><td>${b.date} · ${b.hours.map(h => h + ':00').join(', ')}</td><td class="r">${rp(b.total)}</td><td><span class="badge ${b.status === 'batal' ? 'dg' : b.status === 'selesai' ? 'ok' : 'wn'}">${b.status}</span></td><td class="r">${b.status === 'dikonfirmasi' ? `<button class="btn sec sm" onclick="setStatus('${b.id}','selesai')">Selesai</button> <button class="btn dg sm" onclick="setStatus('${b.id}','batal')">Batal</button>` : ''}</td></tr>`).join('') || '<tr><td class="mu" colspan="7">Belum ada booking.</td></tr>'}</tbody></table></div>`;
+  $('#c-add').onclick = () => { const n = $('#c-name').value.trim(), p = +$('#c-price').value; if (!n || !p) return; courts.push({ id: uid(), name: n, price: p }); DB.set('courts', courts); renderCourts(); renderAdmin(); };
+}
+function delCourt(id) { courts = courts.filter(c => c.id !== id); DB.set('courts', courts); renderCourts(); renderAdmin(); renderSlots(); }
+function setStatus(id, s) { bookings.find(b => b.id === id).status = s; DB.set('bookings', bookings); renderAdmin(); renderSlots(); }
+<!--/PREMIUM-->
+
+$$('.nav a').forEach(a => a.onclick = () => { showPage(a.dataset.page); if (TIER === 'premium') { if (a.dataset.page === 'riwayat') renderHistory(); if (a.dataset.page === 'admin') renderAdmin(); } });
+initTheme(); renderCourts(); renderDays(); renderSlots(); showPage(location.hash.slice(1) || 'booking');
+</script>
+</body>
+</html>

@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Dashboard Admin Analytics</title>
+<link rel="stylesheet" href="assets/style.css">
+<style>.chart{position:relative}.chart canvas{width:100%;height:220px;display:block}.legend{display:flex;gap:14px;font-size:12px;color:var(--mu)}.legend i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:5px;vertical-align:-1px}.th-sort{cursor:pointer;user-select:none}.th-sort:hover{color:var(--p)}</style>
+</head>
+<body>
+<div class="app">
+  <aside class="side">
+    <div class="brand">Admin<span>Analytics</span> <span class="badge __TIER_BADGE__" style="font-size:10px">__TIER_LABEL__</span></div>
+    <nav class="nav">
+      <a data-page="overview">📈 Overview</a>
+      <a data-page="orders">🧾 Data Pesanan</a>
+      <a data-page="users" class="__LOCK__">👥 Manajemen User</a>
+      <a data-page="settings" class="__LOCK__">⚙️ Pengaturan</a>
+    </nav>
+    <div style="margin-top:18px;padding:0 10px"><button class="btn sec sm" id="theme">🌓 Tema</button></div>
+  </aside>
+  <main class="main">
+    <section class="page" id="page-overview">
+      <div class="head"><h1>Overview</h1>
+        <div class="row">
+          <!--PREMIUM--><select id="range" style="width:auto"><option value="7">7 hari</option><option value="30" selected>30 hari</option><option value="90">90 hari</option></select><button class="btn sec" id="export">⬇ Export CSV</button><!--/PREMIUM-->
+          __FREE_RANGE__
+        </div>
+      </div>
+      <div class="grid g4" id="stats"></div>
+      <div class="grid g2">
+        <div class="card"><h2>Pendapatan harian</h2><div class="chart"><canvas id="c-line"></canvas></div></div>
+        <div class="card"><h2>Pesanan per kategori</h2><div class="chart"><canvas id="c-bar"></canvas></div><div class="legend" id="l-bar"></div></div>
+      </div>
+      <div class="grid g2">
+        <div class="card"><h2>Sumber traffic</h2><div class="chart"><canvas id="c-pie"></canvas></div><div class="legend" id="l-pie"></div></div>
+        <div class="card"><h2>Produk terlaris</h2><table id="t-top"></table></div>
+      </div>
+    </section>
+
+    <section class="page" id="page-orders" hidden>
+      <div class="head"><h1>Data Pesanan</h1><div class="row"><input id="q" placeholder="Filter nama / produk / status…" style="width:260px"><select id="f-status" style="width:auto"><option value="">Semua status</option><option>paid</option><option>pending</option><option>canceled</option></select></div></div>
+      <div class="card">
+        <table><thead><tr><th class="th-sort" data-k="id">ID</th><th class="th-sort" data-k="customer">Pelanggan</th><th class="th-sort" data-k="product">Produk</th><th class="th-sort" data-k="category">Kategori</th><th class="th-sort r" data-k="amount">Nilai</th><th class="th-sort" data-k="status">Status</th><th class="th-sort" data-k="date">Tanggal</th></tr></thead><tbody id="t-orders"></tbody></table>
+        <div class="row" style="justify-content:space-between;margin-top:12px"><span class="mu" id="pg-info"></span><div class="row"><button class="btn sec sm" id="pg-prev">‹ Sebelumnya</button><button class="btn sec sm" id="pg-next">Berikutnya ›</button></div></div>
+      </div>
+    </section>
+
+    <section class="page" id="page-users" hidden><div class="head"><h1>Manajemen User</h1></div><div id="users">__LOCK_USERS__</div></section>
+    <section class="page" id="page-settings" hidden><div class="head"><h1>Pengaturan</h1></div><div id="settings">__LOCK_SETTINGS__</div></section>
+  </main>
+</div>
+__FREE_MARK__
+<script>const APP_KEY = 'adminanalytics'; const TIER = '__TIER__'; const UPGRADE_URL = '__UPGRADE_URL__';</script>
+<script src="assets/shared.js"></script>
+<script>
+// ---------- data contoh (dibuat deterministik agar konsisten) ----------
+let seed = 42; const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+const CATS = ['Elektronik', 'Fashion', 'Rumah Tangga', 'Olahraga'], PRODUCTS = ['Headphone X1', 'Kaos Polos', 'Blender Mini', 'Sepatu Lari', 'Smartwatch', 'Jaket Hoodie', 'Panci Set', 'Matras Yoga'];
+const NAMES = ['Budi', 'Sari', 'Andi', 'Rina', 'Dimas', 'Maya', 'Fajar', 'Lina', 'Rudi', 'Tari'];
+let orders = DB.get('orders', null);
+if (!orders) {
+  orders = Array.from({ length: 320 }, (_, i) => { const pi = Math.floor(rnd() * 8); return { id: 1000 + i, customer: NAMES[Math.floor(rnd() * 10)] + ' ' + String.fromCharCode(65 + Math.floor(rnd() * 26)) + '.', product: PRODUCTS[pi], category: CATS[pi % 4], amount: Math.round((50 + rnd() * 950)) * 1000, status: rnd() < .75 ? 'paid' : rnd() < .5 ? 'pending' : 'canceled', date: new Date(Date.now() - Math.floor(rnd() * 90) * 86400000).toISOString().slice(0, 10) }; });
+  DB.set('orders', orders);
+}
+const COLORS = ['#4f46e5', '#f59e0b', '#10b981', '#ec4899'];
+const css = v => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+
+// ---------- chart kecil dengan canvas ----------
+function setup(id) { const c = $(id); const r = c.getBoundingClientRect(); c.width = r.width * devicePixelRatio; c.height = 220 * devicePixelRatio; const x = c.getContext('2d'); x.scale(devicePixelRatio, devicePixelRatio); x.clearRect(0, 0, r.width, 220); return [x, r.width, 220]; }
+function lineChart(id, pts) {
+  const [x, W, H] = setup(id), p = 30, max = Math.max(1, ...pts.map(d => d.v)); x.font = '11px sans-serif'; x.fillStyle = css('--mu'); x.strokeStyle = css('--bd');
+  for (let g = 0; g <= 4; g++) { const y = p + (H - 2 * p) * g / 4; x.beginPath(); x.moveTo(p + 20, y); x.lineTo(W - 10, y); x.stroke(); x.fillText(Math.round(max * (4 - g) / 4 / 1e6) + 'jt', 0, y + 4); }
+  const X = i => p + 20 + (W - p - 30) * i / (pts.length - 1), Y = v => p + (H - 2 * p) * (1 - v / max);
+  x.beginPath(); pts.forEach((d, i) => i ? x.lineTo(X(i), Y(d.v)) : x.moveTo(X(i), Y(d.v))); x.strokeStyle = COLORS[0]; x.lineWidth = 2; x.stroke();
+  x.lineTo(X(pts.length - 1), Y(0)); x.lineTo(X(0), Y(0)); x.fillStyle = COLORS[0] + '22'; x.fill();
+  pts.forEach((d, i) => { if (i % Math.ceil(pts.length / 6) === 0) { x.fillStyle = css('--mu'); x.fillText(d.d.slice(5), X(i) - 12, H - 6); } });
+}
+function barChart(id, data) {
+  const [x, W, H] = setup(id), p = 30, max = Math.max(1, ...data.map(d => d.v)), bw = (W - 2 * p) / data.length; x.font = '11px sans-serif';
+  data.forEach((d, i) => { const h = (H - 2 * p) * d.v / max; x.fillStyle = COLORS[i % 4]; x.beginPath(); x.roundRect(p + i * bw + bw * .2, H - p - h, bw * .6, h, [4, 4, 0, 0]); x.fill(); x.fillStyle = css('--tx'); x.fillText(d.v, p + i * bw + bw * .4 - 6, H - p - h - 6); });
+}
+function pieChart(id, data) {
+  const [x, W, H] = setup(id), t = data.reduce((a, d) => a + d.v, 0), cx = W / 2, cy = H / 2, r = 90; let a = -Math.PI / 2;
+  data.forEach((d, i) => { const s = d.v / t * Math.PI * 2; x.beginPath(); x.moveTo(cx, cy); x.arc(cx, cy, r, a, a + s); x.closePath(); x.fillStyle = COLORS[i % 4]; x.fill(); x.strokeStyle = css('--sf'); x.lineWidth = 2; x.stroke(); a += s; });
+  x.beginPath(); x.arc(cx, cy, 50, 0, Math.PI * 2); x.fillStyle = css('--sf'); x.fill(); x.fillStyle = css('--tx'); x.font = 'bold 16px sans-serif'; x.textAlign = 'center'; x.fillText(t.toLocaleString('id-ID'), cx, cy + 5);
+}
+const legend = (id, data) => $(id).innerHTML = data.map((d, i) => `<span><i style="background:${COLORS[i % 4]}"></i>${d.k} (${d.v})</span>`).join('');
+
+function renderOverview() {
+  const days = TIER === 'premium' ? +$('#range').value : 30;
+  const rows = orders.filter(o => Date.now() - new Date(o.date) < days * 86400000), paid = rows.filter(o => o.status === 'paid');
+  const rev = paid.reduce((a, o) => a + o.amount, 0);
+  $('#stats').innerHTML = [[rp(rev), 'Pendapatan'], [paid.length, 'Pesanan lunas'], [rows.filter(o => o.status === 'pending').length, 'Pending'], [Math.round(paid.length / Math.max(1, rows.length) * 100) + '%', 'Konversi']].map(([n, l]) => `<div class="card stat"><div class="n">${n}</div><div class="l">${l} · ${days} hari</div></div>`).join('');
+  const byDay = {}; for (let i = days - 1; i >= 0; i--) byDay[new Date(Date.now() - i * 86400000).toISOString().slice(0, 10)] = 0; paid.forEach(o => { if (o.date in byDay) byDay[o.date] += o.amount; });
+  lineChart('#c-line', Object.entries(byDay).map(([d, v]) => ({ d, v })));
+  const byCat = CATS.map(k => ({ k, v: rows.filter(o => o.category === k).length })); barChart('#c-bar', byCat); legend('#l-bar', byCat);
+  const src = [{ k: 'Organik', v: 1240 }, { k: 'Iklan', v: 860 }, { k: 'Sosial', v: 540 }, { k: 'Referral', v: 210 }]; pieChart('#c-pie', src); legend('#l-pie', src);
+  const byP = {}; paid.forEach(o => { byP[o.product] = (byP[o.product] || 0) + o.amount; });
+  $('#t-top').innerHTML = Object.entries(byP).sort((a, b) => b[1] - a[1]).slice(0, 5).map(([k, v], i) => `<tr><td>${i + 1}. ${k}</td><td class="r">${rp(v)}</td></tr>`).join('');
+}
+
+// ---------- tabel pesanan: filter, sort, pagination ----------
+let sortK = 'date', sortD = -1, page = 0; const PER = 12;
+function renderOrders() {
+  const q = $('#q').value.toLowerCase(), st = $('#f-status').value;
+  const rows = orders.filter(o => (!q || (o.customer + o.product + o.status).toLowerCase().includes(q)) && (!st || o.status === st)).sort((a, b) => (a[sortK] > b[sortK] ? 1 : -1) * sortD);
+  const pages = Math.max(1, Math.ceil(rows.length / PER)); page = Math.min(page, pages - 1);
+  $('#t-orders').innerHTML = rows.slice(page * PER, page * PER + PER).map(o => `<tr><td>#${o.id}</td><td>${esc(o.customer)}</td><td>${o.product}</td><td class="mu">${o.category}</td><td class="r">${rp(o.amount)}</td><td><span class="badge ${o.status === 'paid' ? 'ok' : o.status === 'pending' ? 'wn' : 'dg'}">${o.status}</span></td><td class="mu">${o.date}</td></tr>`).join('');
+  $('#pg-info').textContent = `${rows.length} pesanan · halaman ${page + 1}/${pages}`;
+}
+$('#q').oninput = $('#f-status').onchange = () => { page = 0; renderOrders(); };
+$('#pg-prev').onclick = () => { page = Math.max(0, page - 1); renderOrders(); };
+$('#pg-next').onclick = () => { page++; renderOrders(); };
+$$('.th-sort').forEach(t => t.onclick = () => { if (sortK === t.dataset.k) sortD *= -1; else { sortK = t.dataset.k; sortD = 1; } renderOrders(); });
+
+<!--PREMIUM-->
+// ---------- PREMIUM: rentang tanggal, export, user, pengaturan ----------
+$('#range').onchange = renderOverview;
+$('#export').onclick = () => { const csv = 'id,customer,product,category,amount,status,date\n' + orders.map(o => Object.values(o).join(',')).join('\n'); const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' })); a.download = 'orders.csv'; a.click(); };
+let users = DB.get('users', [{ id: uid(), name: 'Owner', email: 'owner@toko.id', role: 'admin', perms: ['orders', 'users', 'settings'] }, { id: uid(), name: 'Staf CS', email: 'cs@toko.id', role: 'staff', perms: ['orders'] }]);
+function renderUsers() {
+  $('#users').innerHTML = `<div class="card"><div class="grid g4"><div><label>Nama</label><input id="u-name"></div><div><label>Email</label><input id="u-email"></div><div><label>Role</label><select id="u-role"><option value="admin">Admin</option><option value="staff">Staff</option><option value="viewer">Viewer</option></select></div><div><label>&nbsp;</label><button class="btn" id="u-add" style="width:100%">Tambah</button></div></div></div>
+  <div class="card"><table><thead><tr><th>Nama</th><th>Email</th><th>Role</th><th>Izin</th><th></th></tr></thead><tbody>${users.map(u => `<tr><td>${esc(u.name)}</td><td class="mu">${esc(u.email)}</td><td><span class="badge ${u.role === 'admin' ? 'ok' : 'wn'}">${u.role}</span></td>
+    <td>${['orders', 'users', 'settings'].map(p => `<label style="display:inline;margin-right:8px;font-weight:400"><input type="checkbox" style="width:auto" ${u.perms.includes(p) ? 'checked' : ''} onchange="togglePerm('${u.id}','${p}',this.checked)"> ${p}</label>`).join('')}</td>
+    <td class="r"><button class="btn dg sm" onclick="delUser('${u.id}')">Hapus</button></td></tr>`).join('')}</tbody></table></div>`;
+  $('#u-add').onclick = () => { const n = $('#u-name').value.trim(); if (!n) return; users.push({ id: uid(), name: n, email: $('#u-email').value, role: $('#u-role').value, perms: ['orders'] }); DB.set('users', users); renderUsers(); };
+}
+function togglePerm(id, p, on) { const u = users.find(x => x.id === id); u.perms = on ? [...new Set([...u.perms, p])] : u.perms.filter(x => x !== p); DB.set('users', users); }
+function delUser(id) { users = users.filter(u => u.id !== id); DB.set('users', users); renderUsers(); }
+renderUsers();
+const settings = DB.get('settings', { name: 'Toko Saya', currency: 'IDR', api: 'sk_live_' + uid() + uid() });
+$('#settings').innerHTML = `<div class="card"><label>Nama bisnis</label><input id="s-name" value="${esc(settings.name)}"><label>Mata uang</label><select id="s-cur"><option>IDR</option><option>USD</option></select><label>API key (REST API)</label><div class="row"><input id="s-api" value="${settings.api}" readonly><button class="btn sec" onclick="navigator.clipboard.writeText('${settings.api}')">Salin</button></div><p class="mu" style="margin:6px 0 14px">Dokumentasi endpoint: lihat <code>docs/API.md</code> di paket ini.</p><button class="btn" id="s-save">Simpan</button></div>`;
+$('#s-cur').value = settings.currency;
+$('#s-save').onclick = () => { DB.set('settings', { ...settings, name: $('#s-name').value, currency: $('#s-cur').value }); alert('Pengaturan disimpan.'); };
+<!--/PREMIUM-->
+
+$$('.nav a').forEach(a => a.onclick = () => { showPage(a.dataset.page); if (a.dataset.page === 'overview') renderOverview(); });
+initTheme(); renderOrders(); showPage(location.hash.slice(1) || 'overview'); renderOverview();
+$('#theme').addEventListener('click', () => setTimeout(renderOverview, 50));
+window.addEventListener('resize', renderOverview);
+</script>
+</body>
+</html>

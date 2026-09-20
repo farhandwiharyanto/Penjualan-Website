@@ -1,0 +1,53 @@
+<%- include('../partials/header', { title: 'Kelola Produk' }) %>
+
+<div class="admin-shell">
+  <%- include('../partials/admin-nav') %>
+  <section>
+    <div class="admin-head">
+      <div><h1>Produk</h1><p><%= products.length %> produk terdaftar.</p></div>
+      <a href="/admin/products/new" class="btn"><%- icon('plus') %> Tambah Produk</a>
+    </div>
+
+    <div class="table-wrap">
+      <table class="data-table">
+        <thead><tr><th></th><th>Produk</th><th>Kategori</th><th>Harga</th><th>Premium</th><th>Gratis</th><th>Status</th><th>Aksi</th></tr></thead>
+        <tbody>
+          <% products.forEach(p => { %>
+            <tr>
+              <td style="padding-right:0">
+                <% if (p.thumbnail) { %><img class="td-thumb" src="/public/uploads/<%= p.thumbnail %>" alt=""><% } else { %><div class="td-thumb" style="display:grid;place-items:center;color:var(--primary)"><%- icon('image') %></div><% } %>
+              </td>
+              <td><strong><%= p.title %></strong><br><a href="/product/<%= p.slug %>" target="_blank" class="small muted">/product/<%= p.slug %></a></td>
+              <td><%= p.category_name || '-' %></td>
+              <td><%= p.price > 0 ? rp(p.price) : '<span class="muted">Gratis</span>' %></td>
+              <td>
+                <% if (!(p.price > 0)) { %><span class="muted small">&mdash;</span>
+                <% } else if (p.file_path) { %><span class="badge badge-success" title="<%= p.file_name %>">Ada</span>
+                <% } else { %><span class="badge badge-warn">Belum</span><% } %>
+              </td>
+              <td>
+                <% if (p.free_file_path) { %><span class="badge badge-success" title="<%= p.free_file_name %>">Ada</span>
+                <% } else { %><span class="muted small">&mdash;</span><% } %>
+              </td>
+              <td><span class="badge <%= p.is_active ? 'badge-info' : 'badge-muted' %>"><%= p.is_active ? 'Tampil' : 'Disembunyikan' %></span></td>
+              <td>
+                <div class="td-actions">
+                  <a href="/admin/products/<%= p.id %>/edit" class="btn btn-sm btn-secondary"><%- icon('edit') %> Edit</a>
+                  <form action="/admin/products/<%= p.id %>?_method=DELETE" method="POST"
+                        data-confirm-title="Hapus produk ini?" data-confirm="&ldquo;<%= p.title %>&rdquo; akan dihapus permanen beserta file source code-nya. Pembeli lama tidak bisa mengunduhnya lagi." data-confirm-ok="Ya, hapus" data-confirm-tone="danger">
+                    <button type="submit" class="link-btn danger">Hapus</button>
+                  </form>
+                </div>
+              </td>
+            </tr>
+          <% }) %>
+          <% if (products.length === 0) { %>
+            <tr><td colspan="8" class="text-center muted" style="padding:40px">Belum ada produk. <a href="/admin/products/new">Tambah produk pertama &rarr;</a></td></tr>
+          <% } %>
+        </tbody>
+      </table>
+    </div>
+  </section>
+</div>
+
+<%- include('../partials/footer') %>

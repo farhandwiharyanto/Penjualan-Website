@@ -1,0 +1,45 @@
+<%- include('../partials/header', { title: 'Kelola Pesanan' }) %>
+
+<div class="admin-shell">
+  <%- include('../partials/admin-nav') %>
+  <section>
+    <div class="admin-head">
+      <div><h1>Pesanan</h1><p><%= orders.length %> pesanan total.</p></div>
+    </div>
+
+    <div class="table-wrap">
+      <table class="data-table">
+        <thead><tr><th>Order</th><th>Pembeli</th><th>Total</th><th>Status</th><th>Metode</th><th>Download</th><th>Tanggal</th><th>Aksi</th></tr></thead>
+        <tbody>
+          <% orders.forEach(o => { const st = statusInfo(o.status); %>
+            <tr>
+              <td><span class="order-code"><%= o.order_code %></span></td>
+              <td><%= o.buyer_name || '-' %><br><span class="muted small"><%= o.buyer_email || '' %></span></td>
+              <td><%= rp(o.total) %></td>
+              <td><span class="badge badge-<%= st.tone %>"><%= st.label %></span></td>
+              <td class="muted"><%= o.midtrans_payment_type || '-' %></td>
+              <td><%= o.download_count %>&times;</td>
+              <td class="muted small"><%= fmtDate(o.created_at) %></td>
+              <td>
+                <% if (o.status !== 'paid') { %>
+                  <form action="/admin/orders/<%= o.id %>/mark-paid" method="POST"
+                        data-confirm-title="Tandai pesanan lunas?" data-confirm="<%= o.order_code %> &middot; <%= rp(o.total) %> dari <%= o.buyer_name || 'pembeli' %>. Setelah ini pembeli langsung bisa mengunduh file. Pastikan pembayarannya benar-benar sudah kamu terima." data-confirm-ok="Ya, tandai lunas" data-confirm-tone="success">
+                    <button type="submit" class="btn btn-sm btn-secondary"><%- icon('check') %> Tandai Lunas</button>
+                  </form>
+                <% } else { %>
+                  <span class="muted small">&mdash;</span>
+                <% } %>
+              </td>
+            </tr>
+          <% }) %>
+          <% if (orders.length === 0) { %>
+            <tr><td colspan="8" class="text-center muted" style="padding:40px">Belum ada pesanan.</td></tr>
+          <% } %>
+        </tbody>
+      </table>
+    </div>
+    <p class="help-text" style="margin-top:12px"><%- icon('info') %> "Tandai Lunas" untuk pembayaran manual (transfer) atau saat webhook Midtrans belum terpasang. Status dari Midtrans tetap diperbarui otomatis lewat webhook.</p>
+  </section>
+</div>
+
+<%- include('../partials/footer') %>

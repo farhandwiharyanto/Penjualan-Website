@@ -1,0 +1,20 @@
+node_modules/
+.env
+db/*.sqlite
+db/*.sqlite-*
+public/uploads/*
+!public/uploads/.gitkeep
+storage/files/*
+!storage/files/.gitkeep
+public/demos/
+samples/.build/
+samples/portal-lembur-it/src/vendor/
+samples/portal-lembur-it/src/node_modules/
+samples/portal-lembur-it/src/.env
+samples/portal-lembur-it/src/database/*.sqlite
+
+# Source produk yang dijual — JANGAN ikut ke repo publik (build zip-nya ada di storage/files yang juga diabaikan)
+samples/portal-lembur-it/
+
+# Thumbnail produk boleh ikut (kecil, dibuat oleh `npm run thumbs`)
+!public/uploads/thumb-*.png

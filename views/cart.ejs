@@ -1,0 +1,52 @@
+<%- include('partials/header', { title: 'Keranjang' }) %>
+
+<%- include('partials/stepper', { step: 1 }) %>
+
+<% if (items.length === 0) { %>
+  <div class="empty-state">
+    <%- icon('cart') %>
+    <h3>Keranjang kamu masih kosong</h3>
+    <p>Jelajahi katalog, coba demonya, lalu tambahkan yang kamu suka.</p>
+    <a href="/" class="btn">Lihat Katalog</a>
+  </div>
+<% } else { %>
+  <div class="cart-layout">
+    <div>
+      <div class="section-head"><h2>Keranjang</h2><span class="muted small"><%= items.length %> produk</span></div>
+      <div class="card">
+        <% items.forEach(p => { %>
+          <div class="cart-item">
+            <div class="cart-thumb">
+              <% if (p.thumbnail) { %><img src="/public/uploads/<%= p.thumbnail %>" alt=""><% } else { %><%- icon('code') %><% } %>
+            </div>
+            <div class="cart-item-info">
+              <strong><a href="/product/<%= p.slug %>"><%= p.title %></a></strong>
+              <span class="muted small"><%= p.tech_stack || p.short_desc %></span>
+            </div>
+            <div class="cart-item-price"><%= rp(p.price) %></div>
+            <form action="/cart/remove/<%= p.id %>" method="POST">
+              <button type="submit" class="btn btn-sm btn-ghost" title="Hapus dari keranjang"><%- icon('trash') %></button>
+            </form>
+          </div>
+        <% }) %>
+      </div>
+      <p style="margin-top:14px"><a href="/" class="small"><%- icon('arrowLeft') %> Lanjut belanja</a></p>
+    </div>
+
+    <aside class="card card-pad summary">
+      <h3>Ringkasan</h3>
+      <% items.forEach(p => { %>
+        <div class="summary-row"><span><%= p.title %></span><span><%= rp(p.price) %></span></div>
+      <% }) %>
+      <div class="summary-total"><span>Total</span><span><%= rp(total) %></span></div>
+      <a href="/checkout" class="btn btn-lg btn-block">Lanjut ke Pembayaran <%- icon('arrowRight') %></a>
+      <% if (!currentUser) { %>
+        <p class="help-text text-center" style="margin-top:10px">Kamu akan diminta masuk / daftar dulu (gratis, 30 detik).</p>
+      <% } %>
+      <div class="trust"><%- icon('shield') %> Pembayaran aman diproses Midtrans</div>
+      <div class="pay-methods"><span>QRIS</span><span>BCA VA</span><span>Mandiri</span><span>BNI</span><span>GoPay</span><span>Kartu</span></div>
+    </aside>
+  </div>
+<% } %>
+
+<%- include('partials/footer') %>

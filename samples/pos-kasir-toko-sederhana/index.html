@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>POS Kasir Toko Sederhana</title>
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<div class="app">
+  <aside class="side">
+    <div class="brand">POS<span>Kasir</span> <span class="badge __TIER_BADGE__" style="font-size:10px">__TIER_LABEL__</span></div>
+    <nav class="nav">
+      <a data-page="kasir">🧾 Kasir</a>
+      <a data-page="produk">📦 Produk & Stok</a>
+      <a data-page="riwayat">🕘 Riwayat Transaksi</a>
+      <a data-page="laporan" class="__LOCK__">📊 Laporan</a>
+      <a data-page="pengguna" class="__LOCK__">👥 Pengguna</a>
+    </nav>
+    <div style="margin-top:18px;padding:0 10px" class="row"><button class="btn sec sm" id="theme">🌓 Tema</button> <span class="mu" id="who" style="font-size:12px"></span></div>
+  </aside>
+  <main class="main">
+
+    <!-- ===== KASIR ===== -->
+    <section class="page" id="page-kasir">
+      <div class="head"><h1>Kasir</h1><span class="mu" id="clock"></span></div>
+      <div class="grid g2" style="grid-template-columns:1.4fr 1fr">
+        <div class="card">
+          <input id="search" placeholder="Cari produk atau scan barcode, lalu Enter…" autofocus>
+          <div id="plist" class="grid g3" style="margin-top:12px"></div>
+        </div>
+        <div class="card">
+          <h2>Keranjang</h2>
+          <table><tbody id="cart"></tbody></table>
+          <div class="row" style="justify-content:space-between;margin:12px 0;font-size:18px;font-weight:800"><span>Total</span><span id="total">Rp 0</span></div>
+          <label>Bayar (Rp)</label><input id="pay" type="number" min="0" placeholder="0">
+          <div class="row" style="justify-content:space-between;margin:8px 0"><span class="mu">Kembalian</span><strong id="change">Rp 0</strong></div>
+          <button class="btn" id="checkout" style="width:100%">Selesaikan Transaksi</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== PRODUK ===== -->
+    <section class="page" id="page-produk" hidden>
+      <div class="head"><h1>Produk &amp; Stok</h1><button class="btn" id="add-product">+ Tambah Produk</button></div>
+      <div class="card" id="pform" hidden>
+        <div class="grid g4">
+          <div><label>Nama</label><input id="f-name"></div>
+          <div><label>Barcode / SKU</label><input id="f-sku"></div>
+          <div><label>Harga</label><input id="f-price" type="number" min="0"></div>
+          <div><label>Stok</label><input id="f-stock" type="number" min="0"></div>
+        </div>
+        <div class="row" style="margin-top:12px"><button class="btn" id="f-save">Simpan</button><button class="btn sec" id="f-cancel">Batal</button></div>
+      </div>
+      <div class="card"><table><thead><tr><th>Nama</th><th>SKU</th><th class="r">Harga</th><th class="r">Stok</th><th></th></tr></thead><tbody id="ptable"></tbody></table></div>
+    </section>
+
+    <!-- ===== RIWAYAT ===== -->
+    <section class="page" id="page-riwayat" hidden>
+      <div class="head"><h1>Riwayat Transaksi</h1></div>
+      <div class="card"><table><thead><tr><th>No</th><th>Waktu</th><th>Kasir</th><th>Item</th><th class="r">Total</th><th></th></tr></thead><tbody id="htable"></tbody></table></div>
+    </section>
+
+    <!-- ===== LAPORAN ===== -->
+    <section class="page" id="page-laporan" hidden>
+      <div class="head"><h1>Laporan Penjualan</h1>
+        <!--PREMIUM--><div class="row no-print"><select id="rep-range" style="width:auto"><option value="today">Hari ini</option><option value="7">7 hari</option><option value="30">30 hari</option><option value="all">Semua</option></select><button class="btn sec" id="rep-csv">⬇ Export CSV</button><button class="btn sec" onclick="print()">🖨 Cetak</button></div><!--/PREMIUM-->
+      </div>
+      <div id="report">__LOCK_LAPORAN__</div>
+    </section>
+
+    <!-- ===== PENGGUNA ===== -->
+    <section class="page" id="page-pengguna" hidden>
+      <div class="head"><h1>Pengguna &amp; Role</h1></div>
+      <div id="users">__LOCK_PENGGUNA__</div>
+    </section>
+  </main>
+</div>
+
+<!-- Struk (cetak) -->
+<div id="receipt" hidden></div>
+__FREE_MARK__
+
+<script>
+const APP_KEY = 'poskasir'; const TIER = '__TIER__'; const UPGRADE_URL = '__UPGRADE_URL__';
+</script>
+<script src="assets/shared.js"></script>
+<script>
+// ---------- data awal ----------
+let products = DB.get('products', null);
+if (!products) {
+  products = [
+    { id: uid(), name: 'Indomie Goreng', sku: '8998866200011', price: 3500, stock: 120 },
+    { id: uid(), name: 'Aqua 600ml', sku: '8886008101053', price: 4000, stock: 80 },
+    { id: uid(), name: 'Roti Tawar', sku: '8992761111113', price: 15000, stock: 20 },
+    { id: uid(), name: 'Kopi Kapal Api 65g', sku: '8991002101012', price: 8500, stock: 45 },
+    { id: uid(), name: 'Sabun Lifebuoy', sku: '8999999038908', price: 5000, stock: 60 },
+    { id: uid(), name: 'Telur 1kg', sku: 'TLR-001', price: 28000, stock: 15 },
+  ];
+  DB.set('products', products);
+}
+let sales = DB.get('sales', []);
+let cart = [];
+let currentUser = DB.get('user', { name: 'Kasir 1', role: 'kasir' });
+$('#who').textContent = currentUser.name + ' · ' + currentUser.role;
+
+// ---------- kasir ----------
+function renderProducts(q = '') {
+  const list = products.filter(p => !q || p.name.toLowerCase().includes(q.toLowerCase()) || p.sku === q);
+  $('#plist').innerHTML = list.map(p => `<button class="card" style="text-align:left;cursor:pointer;margin:0;padding:12px" onclick="addToCart('${p.id}')" ${p.stock <= 0 ? 'disabled' : ''}>
+    <strong>${esc(p.name)}</strong><br><span class="mu">${rp(p.price)}</span><br><span class="badge ${p.stock < 10 ? 'wn' : 'ok'}">stok ${p.stock}</span></button>`).join('') || '<p class="mu">Produk tidak ditemukan.</p>';
+}
+function addToCart(id) {
+  const p = products.find(x => x.id === id); const c = cart.find(x => x.id === id);
+  if (c) { if (c.qty < p.stock) c.qty++; } else cart.push({ id, name: p.name, price: p.price, qty: 1 });
+  renderCart();
+}
+function renderCart() {
+  $('#cart').innerHTML = cart.map(c => `<tr><td>${esc(c.name)}<br><span class="mu">${rp(c.price)}</span></td>
+    <td class="r"><button class="btn sec sm" onclick="qty('${c.id}',-1)">−</button> ${c.qty} <button class="btn sec sm" onclick="qty('${c.id}',1)">+</button></td>
+    <td class="r"><strong>${rp(c.price * c.qty)}</strong></td></tr>`).join('') || '<tr><td class="mu">Keranjang kosong</td></tr>';
+  $('#total').textContent = rp(total()); calcChange();
+}
+const total = () => cart.reduce((s, c) => s + c.price * c.qty, 0);
+function qty(id, d) { const c = cart.find(x => x.id === id); const p = products.find(x => x.id === id); c.qty = Math.min(p.stock, c.qty + d); if (c.qty <= 0) cart = cart.filter(x => x.id !== id); renderCart(); }
+function calcChange() { $('#change').textContent = rp(Math.max(0, (+$('#pay').value || 0) - total())); }
+$('#pay').addEventListener('input', calcChange);
+$('#search').addEventListener('input', e => renderProducts(e.target.value));
+$('#search').addEventListener('keydown', e => { // scan barcode: Enter = tambah produk dengan SKU persis
+  if (e.key === 'Enter') { const p = products.find(x => x.sku === e.target.value.trim()); if (p) { addToCart(p.id); e.target.value = ''; renderProducts(); } }
+});
+$('#checkout').addEventListener('click', () => {
+  if (!cart.length) return alert('Keranjang masih kosong.');
+  const paid = +$('#pay').value || 0; if (paid < total()) return alert('Uang bayar kurang.');
+  const sale = { no: 'TRX-' + Date.now().toString().slice(-8), at: new Date().toISOString(), cashier: currentUser.name, items: cart.map(c => ({ ...c })), total: total(), paid, change: paid - total() };
+  cart.forEach(c => { products.find(p => p.id === c.id).stock -= c.qty; });
+  sales.unshift(sale); DB.set('sales', sales); DB.set('products', products);
+  cart = []; $('#pay').value = ''; renderCart(); renderProducts(); renderHistory();
+  if (TIER === 'premium') printReceipt(sale); else alert('Transaksi ' + sale.no + ' tersimpan. (Cetak struk tersedia di versi Premium)');
+});
+setInterval(() => $('#clock').textContent = new Date().toLocaleString('id-ID'), 1000);
+
+// ---------- produk ----------
+let editId = null;
+function renderTable() {
+  $('#ptable').innerHTML = products.map(p => `<tr><td>${esc(p.name)}</td><td class="mu">${esc(p.sku)}</td><td class="r">${rp(p.price)}</td><td class="r"><span class="badge ${p.stock < 10 ? 'wn' : 'ok'}">${p.stock}</span></td>
+    <td class="r"><button class="btn sec sm" onclick="editProduct('${p.id}')">Edit</button> <button class="btn dg sm" onclick="delProduct('${p.id}')">Hapus</button></td></tr>`).join('');
+}
+$('#add-product').onclick = () => { editId = null; ['name', 'sku', 'price', 'stock'].forEach(k => $('#f-' + k).value = ''); $('#pform').hidden = false; $('#f-name').focus(); };
+$('#f-cancel').onclick = () => $('#pform').hidden = true;
+$('#f-save').onclick = () => {
+  const d = { name: $('#f-name').value.trim(), sku: $('#f-sku').value.trim(), price: +$('#f-price').value, stock: +$('#f-stock').value };
+  if (!d.name) return alert('Nama wajib diisi');
+  if (editId) Object.assign(products.find(p => p.id === editId), d); else products.push({ id: uid(), ...d });
+  DB.set('products', products); $('#pform').hidden = true; renderTable(); renderProducts();
+};
+function editProduct(id) { const p = products.find(x => x.id === id); editId = id; $('#f-name').value = p.name; $('#f-sku').value = p.sku; $('#f-price').value = p.price; $('#f-stock').value = p.stock; $('#pform').hidden = false; }
+function delProduct(id) { if (confirm('Hapus produk?')) { products = products.filter(p => p.id !== id); DB.set('products', products); renderTable(); renderProducts(); } }
+
+// ---------- riwayat ----------
+function renderHistory() {
+  $('#htable').innerHTML = sales.map(s => `<tr><td><strong>${s.no}</strong></td><td class="mu">${new Date(s.at).toLocaleString('id-ID')}</td><td>${esc(s.cashier)}</td><td>${s.items.reduce((a, i) => a + i.qty, 0)} item</td><td class="r">${rp(s.total)}</td>
+    <td class="r">${TIER === 'premium' ? `<button class="btn sec sm" onclick="printReceipt(sales.find(x=>x.no==='${s.no}'))">🖨 Struk</button>` : ''}</td></tr>`).join('') || '<tr><td class="mu" colspan="6">Belum ada transaksi.</td></tr>';
+}
+
+<!--PREMIUM-->
+// ---------- PREMIUM: struk, laporan, pengguna ----------
+function printReceipt(s) {
+  const w = window.open('', '_blank', 'width=380,height=600');
+  w.document.write(`<pre style="font:12px/1.4 monospace;width:58mm;margin:0 auto">
+      TOKO SEDERHANA
+   Jl. Contoh No. 1, Kota
+--------------------------------
+${s.no}
+${new Date(s.at).toLocaleString('id-ID')}
+Kasir: ${s.cashier}
+--------------------------------
+${s.items.map(i => `${i.name.slice(0, 20).padEnd(20)}\n  ${String(i.qty).padStart(3)} x ${String(i.price).padStart(8)} = ${String(i.price * i.qty).padStart(9)}`).join('\n')}
+--------------------------------
+TOTAL     ${String(s.total).padStart(22)}
+BAYAR     ${String(s.paid).padStart(22)}
+KEMBALI   ${String(s.change).padStart(22)}
+--------------------------------
+   Terima kasih, datang lagi!
+</pre><script>print();setTimeout(()=>close(),300)<\/script>`);
+}
+function renderReport() {
+  const range = $('#rep-range').value; const now = Date.now();
+  const rows = sales.filter(s => range === 'all' ? true : range === 'today' ? new Date(s.at).toDateString() === new Date().toDateString() : now - new Date(s.at) < range * 86400000);
+  const rev = rows.reduce((a, s) => a + s.total, 0), items = rows.reduce((a, s) => a + s.items.reduce((x, i) => x + i.qty, 0), 0);
+  const byItem = {}; rows.forEach(s => s.items.forEach(i => { byItem[i.name] = (byItem[i.name] || 0) + i.qty; }));
+  const top = Object.entries(byItem).sort((a, b) => b[1] - a[1]).slice(0, 5);
+  const byCashier = {}; rows.forEach(s => { byCashier[s.cashier] = (byCashier[s.cashier] || 0) + s.total; });
+  const byDay = {}; rows.forEach(s => { const d = s.at.slice(0, 10); byDay[d] = (byDay[d] || 0) + s.total; });
+  const days = Object.entries(byDay).sort(); const max = Math.max(1, ...days.map(d => d[1]));
+  $('#report').innerHTML = `<div class="grid g3"><div class="card stat"><div class="n">${rp(rev)}</div><div class="l">Omzet</div></div><div class="card stat"><div class="n">${rows.length}</div><div class="l">Transaksi</div></div><div class="card stat"><div class="n">${items}</div><div class="l">Item terjual</div></div></div>
+  <div class="card"><h2>Omzet per hari</h2><div style="display:flex;align-items:flex-end;gap:6px;height:140px">${days.map(([d, v]) => `<div title="${d}: ${rp(v)}" style="flex:1;background:var(--p);border-radius:4px 4px 0 0;height:${v / max * 100}%"></div>`).join('') || '<span class="mu">Belum ada data</span>'}</div></div>
+  <div class="grid g2"><div class="card"><h2>Produk terlaris</h2><table>${top.map(([n, q]) => `<tr><td>${esc(n)}</td><td class="r">${q}</td></tr>`).join('') || '<tr><td class="mu">-</td></tr>'}</table></div>
+  <div class="card"><h2>Per kasir</h2><table>${Object.entries(byCashier).map(([n, v]) => `<tr><td>${esc(n)}</td><td class="r">${rp(v)}</td></tr>`).join('') || '<tr><td class="mu">-</td></tr>'}</table></div></div>`;
+  $('#rep-csv').onclick = () => {
+    const csv = 'no,waktu,kasir,total\n' + rows.map(s => [s.no, s.at, s.cashier, s.total].join(',')).join('\n');
+    const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' })); a.download = 'laporan-penjualan.csv'; a.click();
+  };
+}
+$('#rep-range').addEventListener('change', renderReport);
+let users = DB.get('users', [{ id: uid(), name: 'Admin', role: 'admin' }, { id: uid(), name: 'Kasir 1', role: 'kasir' }]);
+function renderUsers() {
+  $('#users').innerHTML = `<div class="card"><div class="row"><input id="u-name" placeholder="Nama pengguna" style="width:220px"><select id="u-role" style="width:140px"><option value="kasir">Kasir</option><option value="admin">Admin</option></select><button class="btn" id="u-add">Tambah</button></div></div>
+  <div class="card"><table><thead><tr><th>Nama</th><th>Role</th><th></th></tr></thead><tbody>${users.map(u => `<tr><td>${esc(u.name)}</td><td><span class="badge ${u.role === 'admin' ? 'ok' : 'wn'}">${u.role}</span></td>
+    <td class="r"><button class="btn sec sm" onclick="switchUser('${u.id}')">Masuk sebagai</button> <button class="btn dg sm" onclick="delUser('${u.id}')">Hapus</button></td></tr>`).join('')}</tbody></table>
+  <p class="mu" style="margin:10px 0 0">Admin dapat mengelola produk &amp; laporan; kasir hanya halaman Kasir &amp; Riwayat.</p></div>`;
+  $('#u-add').onclick = () => { const n = $('#u-name').value.trim(); if (!n) return; users.push({ id: uid(), name: n, role: $('#u-role').value }); DB.set('users', users); renderUsers(); };
+}
+function switchUser(id) { currentUser = users.find(u => u.id === id); DB.set('user', currentUser); $('#who').textContent = currentUser.name + ' · ' + currentUser.role; }
+function delUser(id) { users = users.filter(u => u.id !== id); DB.set('users', users); renderUsers(); }
+renderUsers();
+<!--/PREMIUM-->
+
+// ---------- navigasi ----------
+$$('.nav a').forEach(a => a.onclick = () => { if (a.classList.contains('lock')) { showPage(a.dataset.page); return; } showPage(a.dataset.page); if (a.dataset.page === 'laporan' && TIER === 'premium') renderReport(); });
+initTheme(); renderProducts(); renderCart(); renderTable(); renderHistory();
+showPage(location.hash.slice(1) || 'kasir'); if (location.hash === '#laporan' && TIER === 'premium') renderReport();
+</script>
+</body>
+</html>

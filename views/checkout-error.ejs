@@ -1,0 +1,13 @@
+<%- include('partials/header', { title: 'Terjadi Kesalahan' }) %>
+
+<div class="card result-card">
+  <div class="result-icon danger"><%- icon('alert') %></div>
+  <h1 style="font-size:22px">Ups, ada yang tidak beres</h1>
+  <p class="muted"><%= message %></p>
+  <div style="display:flex;gap:10px;justify-content:center;margin-top:20px;flex-wrap:wrap">
+    <a href="javascript:history.back()" class="btn btn-secondary"><%- icon('arrowLeft') %> Kembali</a>
+    <a href="/" class="btn">Ke Beranda</a>
+  </div>
+</div>
+
+<%- include('partials/footer') %>

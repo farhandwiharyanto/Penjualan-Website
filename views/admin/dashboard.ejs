@@ -1,0 +1,157 @@
+<%- include('../partials/header', { title: 'Admin Dashboard' }) %>
+
+<div class="admin-shell">
+  <%- include('../partials/admin-nav') %>
+  <section>
+    <div class="admin-head">
+      <div><h1>Dashboard</h1><p>Ringkasan 30 hari terakhir &middot; <%= fmtDate(new Date().toISOString()) %></p></div>
+      <a href="/admin/products/new" class="btn"><%- icon('plus') %> Tambah Produk</a>
+    </div>
+
+    <!-- Stat tiles -->
+    <div class="stat-grid stat-grid-6">
+      <div class="card stat-card">
+        <div class="stat-icon green"><%- icon('wallet') %></div>
+        <div>
+          <div class="num"><%= rp(revenue30) %></div>
+          <div class="label">Pendapatan 30 hari
+            <% if (revenueDelta !== null) { %>
+              <span class="delta <%= revenueDelta >= 0 ? 'up' : 'down' %>"><%= revenueDelta >= 0 ? '▲' : '▼' %> <%= Math.abs(revenueDelta) %>%</span>
+            <% } else if (revenue30 > 0) { %>
+              <span class="delta muted">baru mulai</span>
+            <% } %>
+          </div>
+        </div>
+      </div>
+      <div class="card stat-card"><div class="stat-icon indigo"><%- icon('checkCircle') %></div><div><div class="num"><%= paidCount %></div><div class="label">Pesanan lunas</div></div></div>
+      <div class="card stat-card"><div class="stat-icon amber"><%- icon('clock') %></div><div><div class="num"><%= pendingCount %></div><div class="label">Menunggu bayar</div></div></div>
+      <div class="card stat-card"><div class="stat-icon indigo"><%- icon('zap') %></div><div><div class="num"><%= conversion %>%</div><div class="label">Konversi (lunas / total)</div></div></div>
+      <div class="card stat-card"><div class="stat-icon indigo"><%- icon('user') %></div><div><div class="num"><%= buyerCount %></div><div class="label">Pembeli terdaftar</div></div></div>
+      <div class="card stat-card"><div class="stat-icon green"><%- icon('download') %></div><div><div class="num"><%= freeDownloadCount %> <span class="muted" style="font-size:13px;font-weight:500">gratis</span> &middot; <%= downloadCount %> <span class="muted" style="font-size:13px;font-weight:500">premium</span></div><div class="label">Download<% if (freemiumRate !== null) { %> &middot; konversi gratis&rarr;premium <strong><%= freemiumRate %>%</strong><% } %></div></div></div>
+    </div>
+
+    <!-- Chart pendapatan -->
+    <div class="card card-pad chart-card">
+      <div class="chart-head">
+        <div><h3>Pendapatan harian</h3><p class="muted small" style="margin:0">Pesanan lunas per hari, 30 hari terakhir &middot; total <strong><%= rp(revenue30) %></strong> dari <%= daily.reduce((a, d) => a + d.orders, 0) %> pesanan</p></div>
+        <button type="button" class="btn btn-sm btn-ghost" data-toggle-table="rev-table"><%- icon('layout') %> Tabel</button>
+      </div>
+      <div class="chart" id="chart-revenue" data-series='<%- JSON.stringify(daily) %>'></div>
+      <div class="chart-table" id="rev-table" hidden>
+        <table class="data-table"><thead><tr><th>Tanggal</th><th>Pesanan</th><th>Pendapatan</th></tr></thead><tbody>
+          <% daily.filter(d => d.orders > 0).forEach(d => { %><tr><td><%= d.date %></td><td><%= d.orders %></td><td><%= rp(d.revenue) %></td></tr><% }) %>
+          <% if (!daily.some(d => d.orders > 0)) { %><tr><td colspan="3" class="muted text-center">Belum ada pesanan lunas dalam 30 hari.</td></tr><% } %>
+        </tbody></table>
+      </div>
+    </div>
+
+    <div class="dash-2col">
+      <!-- Status pesanan -->
+      <div class="card card-pad chart-card">
+        <div class="chart-head"><div><h3>Pesanan per status</h3><p class="muted small" style="margin:0">Semua waktu &middot; <%= orderCount %> pesanan</p></div></div>
+        <% const statusOrder = ['paid', 'pending', 'expired', 'canceled', 'failed']; const statusData = statusOrder.map(k => ({ label: statusInfo(k).label, value: statusCounts[k] || 0 })).filter(d => d.value > 0); %>
+        <% if (statusData.length) { %>
+          <div class="chart chart-bars" id="chart-status" data-series='<%- JSON.stringify(statusData) %>'></div>
+        <% } else { %>
+          <div class="chart-empty"><%- icon('receipt') %> Belum ada pesanan.</div>
+        <% } %>
+      </div>
+
+      <!-- Produk terlaris -->
+      <div class="card card-pad chart-card">
+        <div class="chart-head"><div><h3>Produk terlaris</h3><p class="muted small" style="margin:0">Berdasarkan pesanan lunas</p></div></div>
+        <% if (topProducts.length) { %>
+          <div class="chart chart-bars" id="chart-top" data-series='<%- JSON.stringify(topProducts.map(p => ({ label: p.title, value: p.sold, sub: rp(p.revenue) }))) %>' data-unit="terjual"></div>
+        <% } else { %>
+          <div class="chart-empty"><%- icon('package') %> Belum ada produk yang terjual.</div>
+        <% } %>
+      </div>
+    </div>
+
+    <div class="card card-pad chart-card">
+      <div class="chart-head"><div><h3>Freemium: gratis &rarr; premium</h3><p class="muted small" style="margin:0">Berapa pengunduh versi gratis yang akhirnya membeli premium produk yang sama</p></div></div>
+      <% if (freemium.length) { %>
+        <div class="table-wrap" style="box-shadow:none">
+          <table class="data-table">
+            <thead><tr><th>Produk</th><th>Unduh gratis (user)</th><th>Beli premium</th><th>Konversi</th></tr></thead>
+            <tbody>
+              <% freemium.forEach(r => { const rate = r.free_users ? Math.round(r.converted / r.free_users * 100) : 0; %>
+                <tr>
+                  <td><%= r.title %></td>
+                  <td><%= r.free_users %></td>
+                  <td><%= r.converted %></td>
+                  <td><div class="hbar-row" style="grid-template-columns:1fr 44px"><span class="hbar-track"><span class="hbar-fill" style="width:<%= rate %>%"></span></span><span class="hbar-value"><%= rate %>%</span></div></td>
+                </tr>
+              <% }) %>
+            </tbody>
+          </table>
+        </div>
+        <p class="help-text" style="margin-top:10px"><%- icon('info') %> Patokan umum freemium: 2&ndash;5% sudah bagus. Kalau di bawah 1%, versi gratisnya mungkin terlalu lengkap; kalau tidak ada yang unduh, terlalu sedikit.</p>
+      <% } else { %>
+        <div class="chart-empty"><%- icon('download') %> Belum ada yang mengunduh versi gratis. <a href="/admin/products" style="margin-left:4px">Tambahkan file gratis ke produk &rarr;</a></div>
+      <% } %>
+    </div>
+
+    <div class="dash-2col">
+      <!-- Perlu perhatian -->
+      <% const issues = attention.noFile.length + attention.noDemo.length + attention.noThumb.length + attention.stalePending.length; %>
+      <div class="card card-pad">
+        <div class="chart-head"><div><h3>Perlu perhatian</h3><p class="muted small" style="margin:0"><%= issues ? issues + ' hal yang sebaiknya dibereskan' : 'Semua beres' %></p></div></div>
+        <% if (!issues) { %>
+          <div class="chart-empty"><%- icon('checkCircle') %> Tidak ada masalah. Mantap!</div>
+        <% } else { %>
+          <ul class="attention-list">
+            <% if (attention.noFile.length) { %>
+              <li><span class="att-dot danger"></span><div><strong><%= attention.noFile.length %> produk premium belum punya file source code</strong><span class="muted small">Pembeli tidak bisa download: <% attention.noFile.slice(0,3).forEach((p, i) => { %><a href="/admin/products/<%= p.id %>/edit"><%= p.title %></a><%= i < Math.min(attention.noFile.length,3) - 1 ? ', ' : '' %><% }) %><%= attention.noFile.length > 3 ? ', …' : '' %></span></div></li>
+            <% } %>
+            <% if (attention.stalePending.length) { %>
+              <li><span class="att-dot warn"></span><div><strong><%= attention.stalePending.length %> pesanan pending lebih dari 24 jam</strong><span class="muted small">Kemungkinan pembeli batal. <a href="/admin/orders">Cek pesanan &rarr;</a></span></div></li>
+            <% } %>
+            <% if (attention.noDemo.length) { %>
+              <li><span class="att-dot warn"></span><div><strong><%= attention.noDemo.length %> produk tanpa URL demo</strong><span class="muted small">Nilai jual utama toko ini adalah demo live.</span></div></li>
+            <% } %>
+            <% if (attention.noThumb.length) { %>
+              <li><span class="att-dot info"></span><div><strong><%= attention.noThumb.length %> produk tanpa thumbnail</strong><span class="muted small">Kartu produk pakai gambar placeholder.</span></div></li>
+            <% } %>
+          </ul>
+        <% } %>
+      </div>
+
+      <!-- Panduan singkat -->
+      <div class="card card-pad guide-card">
+        <div class="chart-head"><div><h3><%- icon('sparkles') %> Cara menambah source code</h3></div><a href="/admin/products/new" class="btn btn-sm">Mulai <%- icon('arrowRight') %></a></div>
+        <ol class="guide-steps">
+          <li><strong>Deploy demo-nya</strong> ke Vercel/Netlify/VPS, salin URL-nya. Pastikan tidak memblokir iframe.</li>
+          <li><strong>Zip source code</strong> + README instalasi (maks 500 MB).</li>
+          <li><strong>Produk &rarr; Tambah Produk</strong>: isi form, upload thumbnail &amp; zip.</li>
+          <li><strong>Selesai.</strong> Pembeli download otomatis setelah lunas.</li>
+        </ol>
+      </div>
+    </div>
+
+    <!-- Pesanan terbaru -->
+    <div class="section-head"><h3 style="margin:0">Pesanan terbaru</h3><a href="/admin/orders" class="small">Lihat semua &rarr;</a></div>
+    <div class="table-wrap">
+      <table class="data-table">
+        <thead><tr><th>Order</th><th>Pembeli</th><th>Total</th><th>Status</th><th>Tanggal</th></tr></thead>
+        <tbody>
+          <% recentOrders.forEach(o => { const st = statusInfo(o.status); %>
+            <tr>
+              <td><span class="order-code"><%= o.order_code %></span></td>
+              <td><%= o.buyer_name || '-' %></td>
+              <td><%= rp(o.total) %></td>
+              <td><span class="badge badge-<%= st.tone %>"><%= st.label %></span></td>
+              <td class="muted small"><%= fmtDate(o.created_at) %></td>
+            </tr>
+          <% }) %>
+          <% if (recentOrders.length === 0) { %>
+            <tr><td colspan="5" class="text-center muted">Belum ada pesanan.</td></tr>
+          <% } %>
+        </tbody>
+      </table>
+    </div>
+  </section>
+</div>
+
+<script src="/public/js/charts.js"></script>
+<%- include('../partials/footer') %>
