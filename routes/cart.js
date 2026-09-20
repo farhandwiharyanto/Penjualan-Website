@@ -21,11 +21,15 @@ router.get('/', (req, res) => {
 
 // Masukkan produk ke keranjang; return product atau null jika tidak valid / sudah dibeli
 function addToCart(req, productId) {
-  const product = db.prepare('SELECT id, slug, title, price, setup_price FROM products WHERE id = ? AND is_active = 1').get(productId);
+  const product = db.prepare('SELECT id, slug, title, price, setup_price, file_path FROM products WHERE id = ? AND is_active = 1').get(productId);
   if (!product) return { product: null };
   if (!(product.price > 0)) {
     req.flash('info', `"${product.title}" hanya tersedia versi gratis — download langsung dari halaman produk.`);
     return { product, owned: true }; // perlakukan seperti "tidak perlu beli": kembali ke halaman produk
+  }
+  if (!product.file_path) {
+    req.flash('info', `"${product.title}" belum bisa dibeli — file premium belum tersedia. Coba lagi nanti.`);
+    return { product, owned: true };
   }
   if (req.session.user && findPaidOrderForProduct(req.session.user.id, productId)) {
     req.flash('info', `Kamu sudah memiliki "${product.title}". Download-nya ada di Pesanan Saya.`);

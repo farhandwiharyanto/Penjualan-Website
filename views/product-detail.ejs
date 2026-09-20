@@ -122,7 +122,10 @@
       <div class="tech-tags"><% product.tech_stack.split(',').forEach(t => { %><span><%= t.trim() %></span><% }) %></div>
     <% } %>
 
-    <% if (hasPremium) { %>
+    <% if (product.price > 0 && !hasPremium) { %>
+      <div class="detail-price"><%= rp(product.price) %></div>
+      <div class="detail-price-note">Segera hadir &mdash; file premium sedang disiapkan. <%= hasFree ? 'Sementara, coba versi gratisnya di bawah.' : '' %></div>
+    <% } else if (hasPremium) { %>
       <div class="detail-price"><%= rp(product.price) %></div>
       <div class="detail-price-note">Premium &middot; sekali bayar &middot; update <%= product.update_months || 12 %> bulan &middot; lisensi komersial</div>
     <% } else { %>

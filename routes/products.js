@@ -36,7 +36,7 @@ router.get('/product/:slug', (req, res) => {
   const gotFree = req.session.user ? hasFreeDownload(req.session.user.id, product.id) : false;
   const inCart = (req.session.cart || []).includes(product.id);
   const hasFree = !!product.free_file_path;
-  const hasPremium = product.price > 0; // premium ditawarkan jika ada harga (file bisa menyusul, tapi ditandai di admin)
+  const hasPremium = product.price > 0 && !!product.file_path; // premium hanya bisa dibeli jika file-nya sudah diunggah admin
   res.render('product-detail', { product, paidOrder, inCart, hasFree, hasPremium, gotFree });
 });
 

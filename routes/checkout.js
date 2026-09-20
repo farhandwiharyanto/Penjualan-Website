@@ -30,6 +30,8 @@ router.get('/', requireAuth, async (req, res) => {
   if (items.length === 0) return res.redirect('/cart');
 
   const total = items.reduce((sum, p) => sum + p.price + (p.with_setup ? p.setup_price : 0), 0);
+  // Satu order pending per user: order pending sebelumnya (mis. refresh / tutup popup) dibatalkan agar tidak menumpuk
+  db.prepare("UPDATE orders SET status = 'canceled' WHERE user_id = ? AND status = 'pending'").run(req.session.user.id);
   const orderCode = 'ORDER-' + Date.now() + '-' + req.session.user.id;
 
   const insertOrder = db.prepare(
