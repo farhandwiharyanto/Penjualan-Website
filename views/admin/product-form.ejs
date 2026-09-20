@@ -95,6 +95,13 @@
         <% } %>
       </div>
 
+      <div class="form-section">Jasa pasang &mdash; "Website Jadi" (opsional)</div>
+      <div class="form-group">
+        <label for="setup_price">Harga jasa pasang (Rp)</label>
+        <input type="number" id="setup_price" name="setup_price" min="0" step="50000" value="<%= product ? (product.setup_price || 0) : 0 %>" placeholder="500000">
+        <p class="help-text">Ditawarkan sebagai tier ketiga: pembeli membayar premium + jasa pasang, lalu kamu memasang aplikasinya di domain/hosting milik pembeli. Isi 0 untuk tidak menawarkan.</p>
+      </div>
+
       <div class="form-section">Versi Gratis (opsional)</div>
       <p class="help-text" style="margin:-6px 0 14px">Versi terbatas yang bisa diunduh siapa saja setelah login. Ini "umpan" untuk premium: cukup berguna untuk dicoba, tapi jelas kurang untuk dipakai serius.</p>
       <div class="form-group">

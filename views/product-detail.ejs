@@ -73,6 +73,21 @@
     </div>
     <% } %>
 
+    <% if (hasPremium && product.setup_price > 0) { %>
+    <div class="card card-pad setup-card">
+      <h3><%- icon('layout') %> Tidak mau repot install? Pilih <em>Website Jadi</em></h3>
+      <p class="muted small">Kamu tetap mendapat source code premium, <strong>plus</strong> kami yang memasangnya sampai online di domain &amp; hosting milikmu.</p>
+      <ol class="buy-steps">
+        <li><span class="buy-num">1</span><div><strong>Bayar Premium + jasa pasang</strong><span><%= rp(product.price) %> + <%= rp(product.setup_price) %> = <strong><%= rp(product.price + product.setup_price) %></strong>, sekali bayar.</span></div></li>
+        <li><span class="buy-num">2</span><div><strong>Isi data pemasangan</strong><span>Nama bisnis, domain, akses hosting (cPanel/VPS/Vercel), logo &amp; warna.</span></div></li>
+        <li><span class="buy-num">3</span><div><strong>Kami pasang (1&ndash;3 hari kerja)</strong><span>Progres bisa dipantau di halaman Pesanan Saya.</span></div></li>
+        <li><span class="buy-num">4</span><div><strong>Cek &amp; terima</strong><span>Kamu dapat link website + akun admin. Klik "Terima" kalau sudah sesuai.</span></div></li>
+      </ol>
+      <p class="help-text" style="margin-top:12px"><%- icon('info') %> Belum punya domain/hosting? Kami bantu arahkan (biaya domain/hosting dibayar langsung ke penyedia, bukan ke kami).</p>
+      <form action="/cart/buy-now/<%= product.id %>" method="POST" style="margin-top:14px"><input type="hidden" name="setup" value="1"><button type="submit" class="btn btn-setup"><%- icon('layout') %> Pesan Website Jadi &mdash; <%= rp(product.price + product.setup_price) %></button></form>
+    </div>
+    <% } %>
+
     <% if (hasPremium) { %>
     <div class="card card-pad how-to-buy">
       <h3><%- icon('cart') %> Cara membeli aplikasi ini</h3>
@@ -135,6 +150,13 @@
             <form action="/cart/buy-now/<%= product.id %>" method="POST">
               <button type="submit" class="btn btn-lg btn-block"><%- icon('zap') %> Beli Premium &mdash; <%= rp(product.price) %></button>
             </form>
+            <% if (product.setup_price > 0) { %>
+              <form action="/cart/buy-now/<%= product.id %>" method="POST">
+                <input type="hidden" name="setup" value="1">
+                <button type="submit" class="btn btn-lg btn-block btn-setup"><%- icon('layout') %> Website Jadi &mdash; <%= rp(product.price + product.setup_price) %></button>
+              </form>
+              <span class="help-text text-center">Premium + kami pasang di domain/hosting kamu. Tanpa perlu install sendiri.</span>
+            <% } %>
             <form action="/cart/add/<%= product.id %>" method="POST">
               <button type="submit" class="btn btn-lg btn-block btn-secondary"><%- icon('cart') %> Tambah ke Keranjang</button>
             </form>

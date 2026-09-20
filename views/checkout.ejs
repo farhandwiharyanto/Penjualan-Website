@@ -11,6 +11,7 @@
 
   <% items.forEach(p => { %>
     <div class="summary-row"><span><%= p.title %></span><span><%= rp(p.price) %></span></div>
+    <% if (p.with_setup) { %><div class="summary-row"><span class="small">&nbsp;&nbsp;+ Jasa pasang (Website Jadi)</span><span><%= rp(p.setup_price) %></span></div><% } %>
   <% }) %>
   <div class="summary-total"><span>Total</span><span><%= rp(total) %></span></div>
 

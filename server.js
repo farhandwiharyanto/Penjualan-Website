@@ -7,6 +7,7 @@ const path = require('path');
 
 const db = require('./db/db'); // memastikan DB & schema siap sebelum route dipakai
 const icon = require('./lib/icons');
+const { SERVICE_STATUS } = require('./lib/services');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -52,6 +53,8 @@ app.use((req, res, next) => {
   res.locals.icon = icon;
   res.locals.rp = n => 'Rp ' + Number(n || 0).toLocaleString('id-ID');
   res.locals.statusInfo = s => STATUS_LABELS[s] || { label: s, tone: 'muted' };
+  res.locals.serviceStatus = s => SERVICE_STATUS[s] || { label: s, tone: 'muted' };
+  res.locals.setupCount = Object.keys(req.session.cartSetup || {}).length;
   res.locals.fmtDate = d => new Date(d.includes('T') ? d : d.replace(' ', 'T') + 'Z')
     .toLocaleString('id-ID', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
   next();

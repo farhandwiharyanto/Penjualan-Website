@@ -13,14 +13,15 @@ function getCartProducts(req) {
 }
 
 router.get('/', (req, res) => {
-  const items = getCartProducts(req);
-  const total = items.reduce((sum, p) => sum + p.price, 0);
+  const setup = req.session.cartSetup || {};
+  const items = getCartProducts(req).map(p => ({ ...p, with_setup: !!setup[p.id] && p.setup_price > 0 }));
+  const total = items.reduce((sum, p) => sum + p.price + (p.with_setup ? p.setup_price : 0), 0);
   res.render('cart', { items, total });
 });
 
 // Masukkan produk ke keranjang; return product atau null jika tidak valid / sudah dibeli
 function addToCart(req, productId) {
-  const product = db.prepare('SELECT id, slug, title, price FROM products WHERE id = ? AND is_active = 1').get(productId);
+  const product = db.prepare('SELECT id, slug, title, price, setup_price FROM products WHERE id = ? AND is_active = 1').get(productId);
   if (!product) return { product: null };
   if (!(product.price > 0)) {
     req.flash('info', `"${product.title}" hanya tersedia versi gratis — download langsung dari halaman produk.`);
@@ -33,6 +34,9 @@ function addToCart(req, productId) {
   if (!req.session.cart) req.session.cart = [];
   // source code = satu lisensi per pembelian, jadi tidak ada qty > 1
   if (!req.session.cart.includes(productId)) req.session.cart.push(productId);
+  // "Website Jadi": tandai item ini ikut jasa pasang (hanya jika produk menawarkannya)
+  if (!req.session.cartSetup) req.session.cartSetup = {};
+  if (req.body && req.body.setup === '1' && product.setup_price > 0) req.session.cartSetup[productId] = true;
   return { product };
 }
 
@@ -41,7 +45,7 @@ router.post('/add/:id', (req, res) => {
   const { product, owned } = addToCart(req, productId);
   if (!product) return res.status(404).render('404');
   if (owned) return res.redirect('/product/' + product.slug);
-  req.flash('success', `"${product.title}" ditambahkan ke keranjang.`);
+  req.flash('success', `"${product.title}"${req.body.setup === '1' ? ' + jasa pasang' : ''} ditambahkan ke keranjang.`);
   res.redirect('/product/' + product.slug); // tetap di halaman produk agar user bisa lanjut belanja
 });
 
@@ -57,7 +61,16 @@ router.post('/buy-now/:id', (req, res) => {
 router.post('/remove/:id', (req, res) => {
   const productId = parseInt(req.params.id, 10);
   req.session.cart = (req.session.cart || []).filter(id => id !== productId);
+  if (req.session.cartSetup) delete req.session.cartSetup[productId];
   req.flash('info', 'Produk dihapus dari keranjang.');
+  res.redirect('/cart');
+});
+
+// Toggle jasa pasang untuk item di keranjang
+router.post('/setup/:id', (req, res) => {
+  const productId = parseInt(req.params.id, 10);
+  if (!req.session.cartSetup) req.session.cartSetup = {};
+  if (req.session.cartSetup[productId]) delete req.session.cartSetup[productId]; else req.session.cartSetup[productId] = true;
   res.redirect('/cart');
 });
 

@@ -31,6 +31,7 @@ CREATE TABLE IF NOT EXISTS products (
   free_file_name TEXT,       -- FREE tier: original filename
   free_features TEXT,        -- fitur versi gratis, satu per baris
   update_months INTEGER DEFAULT 12, -- premium: lama hak update (bulan)
+  setup_price INTEGER DEFAULT 0,    -- jasa pasang "Website Jadi" (0 = tidak ditawarkan)
   is_active INTEGER DEFAULT 1,
   created_at TEXT DEFAULT (datetime('now'))
 );
@@ -52,7 +53,24 @@ CREATE TABLE IF NOT EXISTS order_items (
   order_id INTEGER REFERENCES orders(id),
   product_id INTEGER REFERENCES products(id),
   title TEXT NOT NULL,     -- snapshot of product title at purchase time
-  price INTEGER NOT NULL   -- snapshot of price at purchase time
+  price INTEGER NOT NULL,  -- snapshot of price at purchase time (premium)
+  with_setup INTEGER DEFAULT 0,   -- 1 = pembeli memilih "Website Jadi" (jasa pasang)
+  setup_price INTEGER DEFAULT 0   -- snapshot harga jasa pasang
+);
+
+-- Pesanan jasa pasang "Website Jadi": dibuat otomatis saat order lunas untuk item with_setup = 1
+CREATE TABLE IF NOT EXISTS service_orders (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  order_id INTEGER REFERENCES orders(id),
+  order_item_id INTEGER REFERENCES order_items(id),
+  product_id INTEGER REFERENCES products(id),
+  user_id INTEGER REFERENCES users(id),
+  status TEXT NOT NULL DEFAULT 'awaiting_info', -- awaiting_info, in_progress, review, done, canceled
+  business_name TEXT, domain TEXT, hosting_info TEXT, contact TEXT, notes TEXT, -- diisi pembeli
+  result_url TEXT, admin_notes TEXT,                                            -- diisi admin
+  created_at TEXT DEFAULT (datetime('now')),
+  updated_at TEXT DEFAULT (datetime('now')),
+  completed_at TEXT
 );
 
 -- Log setiap download file produk oleh pembeli (untuk audit admin)

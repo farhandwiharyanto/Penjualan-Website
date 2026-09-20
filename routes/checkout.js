@@ -3,6 +3,7 @@ const router = express.Router();
 const midtransClient = require('midtrans-client');
 const db = require('../db/db');
 const { requireAuth } = require('./_middleware');
+const { ensureServiceOrders } = require('../lib/services');
 
 // Kode metode Midtrans: other_qris (QRIS), gopay, shopeepay, bca_va, bni_va, bri_va, permata_va, cimb_va,
 // other_va (Mandiri/bank lain), echannel (Mandiri Bill), credit_card, dll.
@@ -24,10 +25,11 @@ function getCartProducts(req) {
 
 // Halaman checkout: buat order 'pending' + minta Snap token ke Midtrans
 router.get('/', requireAuth, async (req, res) => {
-  const items = getCartProducts(req);
+  const setup = req.session.cartSetup || {};
+  const items = getCartProducts(req).map(p => ({ ...p, with_setup: !!setup[p.id] && p.setup_price > 0 }));
   if (items.length === 0) return res.redirect('/cart');
 
-  const total = items.reduce((sum, p) => sum + p.price, 0);
+  const total = items.reduce((sum, p) => sum + p.price + (p.with_setup ? p.setup_price : 0), 0);
   const orderCode = 'ORDER-' + Date.now() + '-' + req.session.user.id;
 
   const insertOrder = db.prepare(
@@ -37,10 +39,10 @@ router.get('/', requireAuth, async (req, res) => {
   const orderId = orderInfo.lastInsertRowid;
 
   const insertItem = db.prepare(
-    'INSERT INTO order_items (order_id, product_id, title, price) VALUES (?, ?, ?, ?)'
+    'INSERT INTO order_items (order_id, product_id, title, price, with_setup, setup_price) VALUES (?, ?, ?, ?, ?, ?)'
   );
   for (const p of items) {
-    insertItem.run(orderId, p.id, p.title, p.price);
+    insertItem.run(orderId, p.id, p.title, p.price, p.with_setup ? 1 : 0, p.with_setup ? p.setup_price : 0);
   }
 
   const parameter = {
@@ -48,12 +50,10 @@ router.get('/', requireAuth, async (req, res) => {
       order_id: orderCode,
       gross_amount: total,
     },
-    item_details: items.map(p => ({
-      id: String(p.id),
-      price: p.price,
-      quantity: 1,
-      name: p.title.substring(0, 50),
-    })),
+    item_details: items.flatMap(p => [
+      { id: String(p.id), price: p.price, quantity: 1, name: p.title.substring(0, 50) },
+      ...(p.with_setup ? [{ id: `setup-${p.id}`, price: p.setup_price, quantity: 1, name: ('Jasa pasang: ' + p.title).substring(0, 50) }] : []),
+    ]),
     customer_details: {
       first_name: req.session.user.name,
       email: req.session.user.email,
@@ -88,7 +88,7 @@ router.get('/', requireAuth, async (req, res) => {
 router.get('/finish', requireAuth, (req, res) => {
   const order = db.prepare('SELECT * FROM orders WHERE order_code = ?').get(req.query.order);
   if (!order) return res.redirect('/');
-  req.session.cart = []; // kosongkan keranjang
+  req.session.cart = []; req.session.cartSetup = {}; // kosongkan keranjang
   res.render('checkout-finish', { order });
 });
 
@@ -118,6 +118,7 @@ router.post('/notification', express.json(), async (req, res) => {
         `UPDATE orders SET status = ?, midtrans_transaction_id = ?, midtrans_payment_type = ?, paid_at = COALESCE(?, paid_at)
          WHERE order_code = ?`
       ).run(newStatus, statusResponse.transaction_id, statusResponse.payment_type, paidAt, orderCode);
+      if (newStatus === 'paid') { const o = db.prepare('SELECT id FROM orders WHERE order_code = ?').get(orderCode); if (o) ensureServiceOrders(o.id); }
     }
 
     res.status(200).send('OK');

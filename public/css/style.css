@@ -283,6 +283,15 @@ main.container { padding-top: 28px; padding-bottom: 80px; }
 .compare-table .icon.yes { color: var(--success); }
 .compare-table .icon.no { color: var(--border-strong); }
 
+/* ===== Website Jadi ===== */
+.btn-setup { background: linear-gradient(135deg, #0ea5e9, #6366f1); }
+.btn-setup:hover { box-shadow: 0 8px 24px rgba(14, 165, 233, .3); }
+.setup-card { margin-top: 24px; border-color: #bae6fd; background: linear-gradient(180deg, rgba(14,165,233,.06), transparent 60%), var(--surface); }
+[data-theme="dark"] .setup-card { border-color: rgba(14,165,233,.3); }
+.setup-card h3 { display: flex; align-items: center; gap: 8px; }
+.setup-card h3 .icon { color: #0ea5e9; }
+.setup-card em { font-style: normal; color: #0ea5e9; }
+
 /* ===== Stepper ===== */
 .stepper { display: flex; align-items: center; justify-content: center; margin: 0 auto 32px; max-width: 560px; }
 .stepper-item { display: flex; align-items: center; gap: 10px; font-size: 13px; font-weight: 600; color: var(--muted); }

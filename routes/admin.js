@@ -5,6 +5,7 @@ const path = require('path');
 const fs = require('fs');
 const db = require('../db/db');
 const { requireAuth, requireAdmin } = require('./_middleware');
+const { ensureServiceOrders } = require('../lib/services');
 
 router.use(requireAuth, requireAdmin);
 
@@ -140,7 +141,7 @@ router.get('/products/:id/edit', (req, res) => {
 });
 
 router.put('/products/:id', productUpload, (req, res) => {
-  const { title, category_id, short_desc, description, tech_stack, features, free_features, price, update_months, demo_url, is_active, remove_free_file } = req.body;
+  const { title, category_id, short_desc, description, tech_stack, features, free_features, price, update_months, setup_price, demo_url, is_active, remove_free_file } = req.body;
   const existing = db.prepare('SELECT * FROM products WHERE id = ?').get(req.params.id);
   if (!existing) return res.status(404).send('Produk tidak ditemukan');
   const thumb = pickFile(req, 'thumbnail');
@@ -162,9 +163,9 @@ router.put('/products/:id', productUpload, (req, res) => {
     removeProductFile(existing.free_file_path);
     freePath = null; freeName = null;
   }
-  db.prepare(`UPDATE products SET title=?, category_id=?, short_desc=?, description=?, tech_stack=?, features=?, free_features=?, price=?, update_months=?, thumbnail=?, demo_url=?,
+  db.prepare(`UPDATE products SET title=?, category_id=?, short_desc=?, description=?, tech_stack=?, features=?, free_features=?, price=?, update_months=?, setup_price=?, thumbnail=?, demo_url=?,
               file_path=?, file_name=?, free_file_path=?, free_file_name=?, is_active=? WHERE id=?`)
-    .run(title, category_id || null, short_desc, description, tech_stack, features, free_features, parseInt(price, 10) || 0, parseInt(update_months, 10) || 12, thumbnail, demo_url,
+    .run(title, category_id || null, short_desc, description, tech_stack, features, free_features, parseInt(price, 10) || 0, parseInt(update_months, 10) || 12, parseInt(setup_price, 10) || 0, thumbnail, demo_url,
          filePath, fileName, freePath, freeName, is_active ? 1 : 0, req.params.id);
   req.flash('success', `Perubahan "${title}" disimpan.`);
   res.redirect('/admin/products');
@@ -200,6 +201,7 @@ router.get('/orders', (req, res) => {
 router.post('/orders/:id/mark-paid', (req, res) => {
   db.prepare(`UPDATE orders SET status = 'paid', paid_at = COALESCE(paid_at, ?), midtrans_payment_type = COALESCE(midtrans_payment_type, 'manual')
               WHERE id = ? AND status != 'paid'`).run(new Date().toISOString(), req.params.id);
+  ensureServiceOrders(parseInt(req.params.id, 10));
   req.flash('success', 'Pesanan ditandai lunas. Pembeli sekarang bisa download file.');
   res.redirect('/admin/orders');
 });

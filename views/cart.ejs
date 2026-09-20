@@ -22,8 +22,18 @@
             <div class="cart-item-info">
               <strong><a href="/product/<%= p.slug %>"><%= p.title %></a></strong>
               <span class="muted small"><%= p.tech_stack || p.short_desc %></span>
+              <% if (p.setup_price > 0) { %>
+                <form action="/cart/setup/<%= p.id %>" method="POST" style="margin-top:6px">
+                  <% if (p.with_setup) { %>
+                    <span class="badge badge-info">+ Jasa pasang (Website Jadi) <%= rp(p.setup_price) %></span>
+                    <button type="submit" class="link-btn small" style="margin-left:6px">hapus jasa</button>
+                  <% } else { %>
+                    <button type="submit" class="link-btn small"><%- icon('layout') %> Tambah jasa pasang &mdash; Website Jadi (+<%= rp(p.setup_price) %>)</button>
+                  <% } %>
+                </form>
+              <% } %>
             </div>
-            <div class="cart-item-price"><%= rp(p.price) %></div>
+            <div class="cart-item-price"><%= rp(p.price + (p.with_setup ? p.setup_price : 0)) %></div>
             <form action="/cart/remove/<%= p.id %>" method="POST">
               <button type="submit" class="btn btn-sm btn-ghost" title="Hapus dari keranjang"><%- icon('trash') %></button>
             </form>
@@ -37,6 +47,7 @@
       <h3>Ringkasan</h3>
       <% items.forEach(p => { %>
         <div class="summary-row"><span><%= p.title %></span><span><%= rp(p.price) %></span></div>
+        <% if (p.with_setup) { %><div class="summary-row"><span class="small">&nbsp;&nbsp;+ Jasa pasang</span><span><%= rp(p.setup_price) %></span></div><% } %>
       <% }) %>
       <div class="summary-total"><span>Total</span><span><%= rp(total) %></span></div>
       <a href="/checkout" class="btn btn-lg btn-block">Lanjut ke Pembayaran <%- icon('arrowRight') %></a>
