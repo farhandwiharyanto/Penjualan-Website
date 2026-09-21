@@ -22,7 +22,7 @@
               <td><%= p.price > 0 ? rp(p.price) : '<span class="muted">Gratis</span>' %></td>
               <td>
                 <% if (!(p.price > 0)) { %><span class="muted small">&mdash;</span>
-                <% } else if (p.file_path) { %><span class="badge badge-success" title="<%= p.file_name %>">Ada</span>
+                <% } else if (p.file_path) { %><span class="badge badge-success" title="<%= p.file_name %>">Ada</span><% if (p.source_repo) { %> <a href="<%= p.source_repo %>" target="_blank" rel="noopener" class="muted" title="Diimpor dari <%= p.source_repo %>" style="vertical-align:middle"><%- icon('github') %></a><% } %>
                 <% } else { %><span class="badge badge-warn">Belum</span><% } %>
               </td>
               <td>

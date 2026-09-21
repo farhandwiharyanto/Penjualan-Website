@@ -6,6 +6,8 @@ const fs = require('fs');
 const db = require('../db/db');
 const { requireAuth, requireAdmin } = require('./_middleware');
 const { ensureServiceOrders } = require('../lib/services');
+const { scanProject, buildZip } = require('../lib/packager');
+const gh = require('../lib/github');
 
 router.use(requireAuth, requireAdmin);
 
@@ -121,7 +123,49 @@ router.get('/products', (req, res) => {
 
 router.get('/products/new', (req, res) => {
   const categories = db.prepare('SELECT * FROM categories ORDER BY name').all();
-  res.render('admin/product-form', { product: null, categories });
+  res.render('admin/product-form', { product: null, categories, importForm: null });
+});
+
+// Impor produk dari repo GitHub: unduh tarball, bersihkan dengan aturan packager, simpan zip sebagai file premium,
+// lalu buat produk draft (is_active = 0) yang sudah terisi judul/deskripsi/tech stack untuk dilengkapi di form edit.
+router.post('/products/import', async (req, res, next) => {
+  const { repo_url, ref, force } = req.body;
+  const showForm = (error) => {
+    const categories = db.prepare('SELECT * FROM categories ORDER BY name').all();
+    res.status(400).render('admin/product-form', { product: null, categories, importForm: { repo_url, ref, error } });
+  };
+  const parsed = gh.parseRepoUrl(repo_url);
+  if (!parsed) return showForm('URL repo tidak dikenali. Contoh yang benar: https://github.com/username/nama-repo');
+
+  let repoDir = null;
+  try {
+    const info = await gh.getRepoInfo(parsed.owner, parsed.repo);
+    const useRef = (ref || parsed.ref || info.defaultBranch).trim();
+    repoDir = await gh.downloadRepo(info.owner, info.repo, useRef);
+    const scan = scanProject(repoDir.dir);
+    if (scan.warnings.length && !force) {
+      return res.render('admin/product-import-review', { info, ref: useRef, scan, repo_url });
+    }
+
+    const languages = await gh.getLanguages(info.owner, info.repo);
+    const readme = gh.readReadme(repoDir.dir);
+    const title = gh.titleFromRepoName(info.repo);
+    const zipName = `${Date.now()}-${info.repo}-premium.zip`;
+    const zip = buildZip(repoDir.dir, scan, { zipName, folderName: info.repo });
+
+    const result = db.prepare(`INSERT INTO products (title, slug, short_desc, description, tech_stack, features, price, is_active,
+                                 file_path, file_name, source_repo, source_ref)
+                               VALUES (?, ?, ?, ?, ?, ?, 0, 0, ?, ?, ?, ?)`)
+      .run(title, slugify(title), info.description.slice(0, 140), readme.description || info.description, gh.detectStack(repoDir.dir, languages),
+           readme.features, zipName, `${info.repo}-premium.zip`, info.url, useRef);
+    req.flash('success', `"${title}" diimpor dari GitHub (${scan.kept.length} file, ${(zip.size / 1048576).toFixed(2)} MB). Periksa isian, lengkapi harga & thumbnail, lalu centang "Tampilkan di katalog".`);
+    res.redirect(`/admin/products/${result.lastInsertRowid}/edit`);
+  } catch (e) {
+    if (e instanceof gh.GitHubError) return showForm(e.message);
+    next(e);
+  } finally {
+    if (repoDir) repoDir.cleanup();
+  }
 });
 
 router.post('/products', upload.single('thumbnail'), (req, res) => {

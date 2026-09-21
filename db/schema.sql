@@ -32,6 +32,8 @@ CREATE TABLE IF NOT EXISTS products (
   free_features TEXT,        -- fitur versi gratis, satu per baris
   update_months INTEGER DEFAULT 12, -- premium: lama hak update (bulan)
   setup_price INTEGER DEFAULT 0,    -- jasa pasang "Website Jadi" (0 = tidak ditawarkan)
+  source_repo TEXT,          -- URL repo GitHub asal, jika file premium diimpor dari GitHub
+  source_ref TEXT,           -- branch/tag yang diimpor
   is_active INTEGER DEFAULT 1,
   created_at TEXT DEFAULT (datetime('now'))
 );

@@ -1,0 +1,59 @@
+<%- include('../partials/header', { title: 'Tinjau Impor GitHub' }) %>
+
+<div class="admin-shell">
+  <%- include('../partials/admin-nav') %>
+  <section>
+    <div class="admin-head">
+      <div>
+        <nav class="breadcrumb" style="margin-bottom:4px"><a href="/admin/products">Produk</a><span class="sep">/</span><a href="/admin/products/new">Baru</a><span class="sep">/</span><span>Tinjau</span></nav>
+        <h1>Periksa sebelum diimpor</h1>
+        <p>Repo <a href="<%= info.url %>" target="_blank" rel="noopener"><strong><%= info.fullName %></strong></a> @ <code><%= ref %></code> sudah diunduh. Ada hal yang perlu kamu periksa sebelum dikemas jadi produk.</p>
+      </div>
+    </div>
+
+    <div class="card card-pad" style="max-width:720px">
+      <p class="review-meta">
+        <span><strong><%= scan.kept.length %></strong> file ikut</span>
+        <span><strong><%= scan.dropped.length %></strong> dibuang otomatis</span>
+        <span><strong><%= scan.warnings.length %></strong> peringatan</span>
+        <% if (scan.envExample) { %><span><code>.env.example</code> dibuat dari <code>.env</code></span><% } %>
+      </p>
+
+      <% if (scan.blocking.length) { %>
+        <div class="error-box"><%- icon('alert') %><span><strong>Kemungkinan ada rahasia di file yang akan ikut ke pembeli.</strong> Kalau ini kunci/password sungguhan, hapus dulu dari repo (pindahkan ke <code>.env</code>), commit, lalu impor ulang. Kalau hanya nilai contoh, boleh dilanjutkan.</span></div>
+      <% } %>
+
+      <div class="form-section">Peringatan</div>
+      <ul class="review-list" style="margin-bottom:22px">
+        <% scan.warnings.forEach(w => { const blocking = scan.blocking.includes(w); %>
+          <li class="<%= blocking ? 'blocking' : '' %>"><%- icon(blocking ? 'alert' : 'info') %><span><%= w %></span></li>
+        <% }) %>
+      </ul>
+
+      <details class="plain" style="margin-bottom:22px">
+        <summary>Yang dibuang otomatis (<%= scan.dropped.length %>)</summary>
+        <ul class="review-list">
+          <% scan.dropped.slice(0, 60).forEach(d => { %><li><%- icon('trash') %><span><%= d %></span></li><% }) %>
+          <% if (scan.dropped.length > 60) { %><li class="muted">… +<%= scan.dropped.length - 60 %> lagi</li><% } %>
+        </ul>
+      </details>
+
+      <form action="/admin/products/import" method="POST">
+        <input type="hidden" name="repo_url" value="<%= repo_url %>">
+        <input type="hidden" name="ref" value="<%= ref %>">
+        <input type="hidden" name="force" value="1">
+        <% if (scan.blocking.length) { %>
+          <div class="form-group">
+            <label style="font-weight:500"><input type="checkbox" required> Saya sudah memeriksa: yang terdeteksi hanya nilai contoh, bukan rahasia sungguhan.</label>
+          </div>
+        <% } %>
+        <div class="form-actions">
+          <a href="/admin/products/new" class="btn btn-secondary">Batal</a>
+          <button type="submit" class="btn <%= scan.blocking.length ? 'btn-danger' : '' %>" data-loading="Mengunduh &amp; mengemas repo&hellip;"><%- icon('download') %> Tetap impor</button>
+        </div>
+      </form>
+    </div>
+  </section>
+</div>
+
+<%- include('../partials/footer') %>

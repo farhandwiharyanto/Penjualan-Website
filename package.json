@@ -11,7 +11,8 @@
     "build:samples": "node scripts/build-sample-packages.js",
     "package": "node scripts/package-project.js",
     "build:portal": "node scripts/build-portal-lembur.js",
-    "thumbs": "node scripts/capture-thumbnails.js"
+    "thumbs": "node scripts/capture-thumbnails.js",
+    "capture": "node scripts/capture-app.js"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",

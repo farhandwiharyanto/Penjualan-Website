@@ -65,4 +65,18 @@
     open({ title: f.dataset.confirmTitle, message: f.dataset.confirm, ok: f.dataset.confirmOk || 'Ya, lanjutkan', tone: f.dataset.confirmTone || 'primary' })
       .then(function (yes) { if (yes) { f.dataset.confirmed = '1'; f.requestSubmit ? f.requestSubmit() : f.submit(); } });
   });
+
+  // Tombol submit dengan data-loading="Teks…": setelah form terkirim, tombol dikunci dan teksnya diganti
+  // (untuk proses yang butuh beberapa detik, mis. impor repo GitHub). Dibatalkan kalau halaman dibuka lagi dari bfcache.
+  document.addEventListener('submit', function (e) {
+    var btn = e.target.querySelector('button[type="submit"][data-loading]');
+    if (!btn || e.defaultPrevented) return;
+    btn.dataset.original = btn.innerHTML;
+    btn.innerHTML = '<span class="spinner"></span> ' + esc(btn.dataset.loading);
+    btn.classList.add('is-loading');
+    setTimeout(function () { btn.disabled = true; }, 0); // setelah submit terkirim, agar nilai tombol tetap ikut
+  });
+  window.addEventListener('pageshow', function () {
+    document.querySelectorAll('button.is-loading').forEach(function (b) { b.innerHTML = b.dataset.original; b.disabled = false; b.classList.remove('is-loading'); });
+  });
 })();

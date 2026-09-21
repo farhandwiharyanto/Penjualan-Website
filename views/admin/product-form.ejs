@@ -12,17 +12,42 @@
     </div>
 
     <% if (!product) { %>
-    <div class="card card-pad guide-card" style="max-width:720px;margin-bottom:20px">
-      <strong><%- icon('info') %> Siapkan 3 hal sebelum mengisi form:</strong>
-      <ul class="guide-list">
-        <li><strong>URL demo</strong> yang sudah online &mdash; pembeli mencoba lewat sini.</li>
-        <li><strong>File zip premium</strong> (source lengkap + README) dan, jika ada, <strong>zip versi gratis</strong> yang fiturnya dibatasi.</li>
-        <li><strong>Thumbnail</strong> (screenshot aplikasi, rasio 16:10) supaya kartu produk menarik.</li>
+    <form action="/admin/products/import" method="POST" class="card card-pad import-card" style="max-width:720px;margin-bottom:20px">
+      <div class="import-head">
+        <span class="import-icon"><%- icon('github') %></span>
+        <div>
+          <h3 style="margin:0">Ambil dari GitHub</h3>
+          <p class="muted small" style="margin:2px 0 0">Cara tercepat: tempel URL repo, kami unduh, bersihkan, dan buat draft produknya.</p>
+        </div>
+      </div>
+      <% if (importForm && importForm.error) { %>
+        <div class="error-box"><%- icon('alert') %><span><%= importForm.error %></span></div>
+      <% } %>
+      <div class="form-row import-row">
+        <div class="form-group">
+          <label for="repo_url">URL repo</label>
+          <input type="text" id="repo_url" name="repo_url" placeholder="https://github.com/username/nama-repo" value="<%= importForm ? importForm.repo_url : '' %>" required autofocus>
+        </div>
+        <div class="form-group">
+          <label for="ref">Branch / tag</label>
+          <input type="text" id="ref" name="ref" placeholder="default branch" value="<%= importForm ? (importForm.ref || '') : '' %>">
+        </div>
+      </div>
+      <ul class="guide-list" style="margin:0 0 16px">
+        <li>Repo <strong>public</strong> dan <strong>private</strong> sama-sama bisa &mdash; untuk private, isi <code>GITHUB_TOKEN</code> di <code>.env</code>.</li>
+        <li>Otomatis dibuang: <code>.git</code>, <code>node_modules</code>, <code>vendor</code>, <code>.env</code>, file database/log. Jika ada indikasi rahasia (API key, password), kamu diminta meninjau dulu.</li>
+        <li>Judul, deskripsi (dari README), fitur, dan tech stack terisi otomatis. Produk dibuat sebagai <strong>draft</strong>: lengkapi harga &amp; thumbnail di form edit, lalu tampilkan.</li>
       </ul>
-    </div>
+      <div class="form-actions" style="margin-top:0;padding-top:0;border:0">
+        <button type="submit" class="btn" data-loading="Mengunduh &amp; mengemas repo&hellip;"><%- icon('download') %> Ambil &amp; buat draft produk</button>
+      </div>
+    </form>
+
+    <details class="card card-pad manual-details" style="max-width:720px">
+      <summary><span><%- icon('edit') %> Atau isi manual &amp; upload zip sendiri</span><span class="muted small">Siapkan URL demo, zip source code, dan thumbnail (16:10)</span></summary>
     <% } %>
 
-    <form action="<%= product ? '/admin/products/' + product.id + '?_method=PUT' : '/admin/products' %>" method="POST" enctype="multipart/form-data" class="card card-pad" style="max-width:720px">
+    <form action="<%= product ? '/admin/products/' + product.id + '?_method=PUT' : '/admin/products' %>" method="POST" enctype="multipart/form-data" class="<%= product ? 'card card-pad' : 'manual-form' %>" style="max-width:720px">
 
       <div class="form-section">Informasi dasar</div>
       <div class="form-group">
@@ -90,6 +115,9 @@
         <input type="file" id="product_file" name="product_file" accept=".zip,.rar,.7z,.tar,.gz,.tgz">
         <% if (product && product.file_path) { %>
           <div class="file-current"><%- icon('file') %> <strong><%= product.file_name || product.file_path %></strong> <span class="muted">&mdash; upload baru untuk mengganti</span></div>
+          <% if (product.source_repo) { %>
+            <p class="help-text"><%- icon('github') %> Diimpor dari <a href="<%= product.source_repo %>" target="_blank" rel="noopener"><%= product.source_repo.replace(/^https?:\/\/(www\.)?github\.com\//, '') %></a><% if (product.source_ref) { %> @ <code><%= product.source_ref %></code><% } %> &mdash; sudah dibersihkan dari <code>.git</code>, <code>node_modules</code>, <code>.env</code>, dll.</p>
+          <% } %>
         <% } else { %>
           <p class="help-text">zip / rar / 7z / tar.gz, maks 500 MB. Privat &mdash; hanya untuk pembeli yang sudah lunas.</p>
         <% } %>
@@ -133,6 +161,7 @@
         <button type="submit" class="btn"><%- icon('check') %> <%= product ? 'Simpan Perubahan' : 'Tambah Produk' %></button>
       </div>
     </form>
+    <% if (!product) { %></details><% } %>
 
     <div class="card card-pad" style="max-width:720px;margin-top:20px">
       <h3>Kategori baru</h3>

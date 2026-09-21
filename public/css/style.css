@@ -427,6 +427,31 @@ table.data-table tbody tr:hover td { background: var(--surface-2); }
 .guide-list { margin: 8px 0 0; padding-left: 20px; display: grid; gap: 6px; font-size: 14px; color: var(--text-2); }
 code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; background: var(--neutral-bg); padding: 1px 6px; border-radius: 5px; }
 
+/* ===== Impor dari GitHub (form tambah produk) ===== */
+.import-card { border-left: 4px solid var(--primary); }
+.import-head { display: flex; gap: 14px; align-items: center; margin-bottom: 18px; }
+.import-icon { width: 44px; height: 44px; border-radius: 14px; background: var(--primary-soft); color: var(--primary); display: grid; place-items: center; flex-shrink: 0; }
+.import-icon .icon { width: 22px; height: 22px; }
+.import-row { grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); }
+.help-text .icon { width: 13px; height: 13px; vertical-align: -2px; }
+.manual-details summary { display: flex; justify-content: space-between; align-items: center; gap: 12px; cursor: pointer; list-style: none; font-weight: 600; font-size: 14px; }
+.manual-details summary::-webkit-details-marker { display: none; }
+.manual-details summary > span:first-child { display: inline-flex; align-items: center; gap: 8px; }
+.manual-details summary .icon { width: 16px; height: 16px; color: var(--primary); }
+.manual-details summary:hover { color: var(--primary); }
+.manual-details[open] summary { margin-bottom: 22px; padding-bottom: 16px; border-bottom: 1px solid var(--border); }
+.spinner { display: inline-block; width: 14px; height: 14px; border: 2px solid currentColor; border-right-color: transparent; border-radius: 50%; animation: spin .7s linear infinite; vertical-align: -2px; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.btn.is-loading { opacity: .75; pointer-events: none; }
+.review-list { margin: 0; padding: 0; list-style: none; display: grid; gap: 6px; font-size: 13px; }
+.review-list li { display: flex; gap: 8px; align-items: flex-start; padding: 8px 12px; border-radius: 8px; background: var(--surface-2); border: 1px solid var(--border); font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; word-break: break-all; }
+.review-list li.blocking { background: var(--danger-bg); border-color: var(--danger-border); color: var(--danger); }
+.review-list li .icon { width: 14px; height: 14px; flex-shrink: 0; margin-top: 1px; }
+.review-meta { display: flex; flex-wrap: wrap; gap: 8px 18px; font-size: 13px; color: var(--muted); margin: 0 0 18px; }
+.review-meta strong { color: var(--text); }
+details.plain summary { cursor: pointer; font-size: 13px; font-weight: 600; color: var(--text-2); }
+details.plain[open] summary { margin-bottom: 10px; }
+
 /* ===== Modal ===== */
 .modal-open { overflow: hidden; }
 .modal-backdrop { position: fixed; inset: 0; z-index: 100; display: grid; place-items: center; padding: 20px; background: rgba(10, 12, 24, .55); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); opacity: 0; transition: opacity .18s; }

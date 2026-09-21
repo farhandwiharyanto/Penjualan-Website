@@ -22,6 +22,7 @@ bisa langsung dicoba (embed iframe) sebelum pembeli checkout dan bayar via Midtr
 - **Delivery file otomatis**: admin upload zip source code per produk (disimpan privat di `storage/files/`), pembeli bisa download di "Pesanan Saya" setelah status `paid`. Produk yang sudah dibeli tidak bisa dimasukkan keranjang lagi.
 - **Freemium (Gratis vs Premium)**: setiap produk bisa punya versi gratis (fitur terbatas, wajib login untuk download → kamu dapat email calon pembeli) dan versi premium (sekali bayar, update N bulan, lisensi komersial). Halaman produk menampilkan tabel perbandingan otomatis; dashboard menghitung konversi gratis → premium per produk.
 - **Website Jadi (jasa pasang)**: tier ketiga per produk — pembeli membayar premium + jasa pasang, mengisi data (domain, akses hosting, kontak), admin mengerjakan lewat pipeline *Menunggu data → Sedang dipasang → Menunggu konfirmasi → Selesai* di menu **Pesanan Jasa**, pembeli menerima hasil lewat tombol "Terima". Atur harga jasa di form produk (0 = tidak ditawarkan).
+- **Impor dari GitHub**: tempel URL repo (public/private via `GITHUB_TOKEN`), server mengunduh, membersihkan rahasia & sampah build, lalu membuat draft produk dengan judul/deskripsi/tech stack terisi otomatis. Upload zip manual tetap tersedia.
 - Panel admin: dashboard analitik (pendapatan harian, status pesanan, produk terlaris, daftar hal yang perlu perhatian), CRUD produk (+ upload thumbnail & file produk), daftar semua pesanan, tandai lunas manual (untuk transfer manual / testing tanpa webhook), jumlah download per order
 
 ## Cara Menjalankan (Development)
@@ -64,9 +65,31 @@ bisa langsung dicoba (embed iframe) sebelum pembeli checkout dan bayar via Midtr
 
 ## Cara Menambah Source Code (Produk) untuk Dijual
 
-Ada dua cara: lewat panel admin (disarankan) atau lewat seed script.
+Ada tiga cara: impor dari GitHub (paling cepat), isi manual lewat panel admin, atau lewat seed script.
 
-### A. Lewat panel admin
+### A. Impor dari GitHub (disarankan)
+
+1. Login admin → **Admin → Produk → + Tambah Produk**. Bagian paling atas adalah **Ambil dari GitHub**.
+2. Tempel URL repo (`https://github.com/username/repo`, boleh juga `username/repo` atau URL `/tree/<branch>`),
+   isi branch/tag kalau bukan default branch, klik **Ambil & buat draft produk**.
+3. Server mengunduh repo lewat GitHub API (tanpa `git`), membersihkannya dengan aturan yang sama seperti
+   `npm run package` (`.git`, `node_modules`, `vendor`, `.env`, file database/log dibuang; `.env.example` dibuat
+   otomatis dari `.env`), lalu menyimpan zip-nya sebagai **file premium** produk.
+4. Kalau ada indikasi rahasia (API key, password, dump `.sql`), kamu dibawa ke halaman **tinjau** dulu:
+   perbaiki di repo lalu impor ulang, atau centang konfirmasi kalau itu memang hanya nilai contoh.
+5. Produk dibuat sebagai **draft** (tidak tampil di katalog) dengan judul, deskripsi (dari README), fitur
+   (bullet di bawah heading "Fitur/Features" di README), dan tech stack yang terisi otomatis. Kamu langsung
+   diarahkan ke form edit: koreksi isian, isi **harga**, upload **thumbnail**, isi **URL demo**, centang
+   **Tampilkan di katalog**, simpan.
+
+**Repo private:** buat token di GitHub → Settings → Developer settings → **Fine-grained tokens**, pilih repo
+yang mau dijual, izin **Contents: Read-only**. Taruh di `.env` sebagai `GITHUB_TOKEN=...` lalu restart server.
+Repo public bisa tanpa token. Batas ukuran repo 300 MB (menurut GitHub, sebelum dibersihkan).
+
+Impor bersifat sekali ambil: perubahan di repo setelah itu tidak otomatis masuk. Untuk memperbarui,
+impor ulang sebagai produk baru atau upload zip baru lewat form Edit Produk.
+
+### B. Isi manual lewat panel admin
 
 1. **Siapkan demo online.** Deploy aplikasi yang akan dijual ke hosting mana pun
    (Vercel, Netlify, Railway, VPS, dll). URL ini akan di-embed sebagai iframe di halaman produk.
@@ -115,7 +138,7 @@ Sumbernya satu file per produk (`samples/<slug>/index.html`). Bagian yang hanya 
 `<!--PREMIUM--> … <!--/PREMIUM-->`; placeholder `__LOCK_NAMA__` menjadi kotak "fitur Premium" di versi gratis.
 Ini bisa jadi pola untuk produk kamu sendiri: satu sumber → dua paket.
 
-### C. Menjual website yang sudah jalan (dengan data asli)
+### Menjual website yang sudah jalan (dengan data asli)
 
 Yang dijual adalah **kodenya, bukan datanya**. Alat berikut mengemas folder project menjadi zip bersih:
 
@@ -147,7 +170,16 @@ npm run thumbs -- --only <slug> --url <slug>=<url>  # URL khusus, mis. file HTML
 ```
 Butuh Google Chrome/Chromium terpasang (atau set `CHROME_BIN`).
 
-### B. Lewat seed script (banyak produk sekaligus)
+Untuk aplikasi yang butuh **login dulu** sebelum halaman menariknya tampil (dashboard, dsb):
+```bash
+npm run capture -- --url https://demo-kamu.com/login \
+  --eval "setVal('input[type=text]','admin'); setVal('input[type=password]','password'); document.querySelector('form').requestSubmit(); await wait(5000)" \
+  --out public/uploads/thumb-<slug>.png
+```
+`--eval` dijalankan di dalam halaman (boleh `await`, ada helper `setVal(selector, nilai)` dan `wait(ms)`), lalu hasilnya dipotret.
+Setelah itu isi nama file thumbnail di form Edit Produk (atau langsung di kolom `thumbnail`).
+
+### C. Lewat seed script (banyak produk sekaligus)
 
 Edit [`db/seed.js`](db/seed.js), tambahkan blok `upsertProduct({...})`, lalu jalankan `npm run seed`.
 Seed aman dijalankan berulang (produk dengan slug yang sama dilewati). Untuk file produk lewat cara ini,
@@ -188,7 +220,10 @@ sourcecode-market/
 │   ├── products.js          # katalog & detail produk (publik)
 │   ├── cart.js               # keranjang (session)
 │   ├── checkout.js           # buat transaksi Midtrans + webhook
-│   └── admin.js              # CRUD produk & lihat pesanan (khusus admin)
+│   └── admin.js              # CRUD produk, impor GitHub & lihat pesanan (khusus admin)
+├── lib/
+│   ├── packager.js          # aturan pembersihan & zip (dipakai impor GitHub + npm run package)
+│   └── github.js            # unduh repo via GitHub API, deteksi judul/deskripsi/tech stack
 ├── views/                  # EJS templates
 └── public/                 # CSS & file upload thumbnail
 ```

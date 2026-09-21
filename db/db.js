@@ -29,7 +29,9 @@ addColumnIfMissing('products', 'update_months', 'INTEGER DEFAULT 12');
 addColumnIfMissing('downloads', 'tier', "TEXT NOT NULL DEFAULT 'premium'");
 addColumnIfMissing('products', 'setup_price', 'INTEGER DEFAULT 0');
 addColumnIfMissing('order_items', 'with_setup', 'INTEGER DEFAULT 0');
-addColumnIfMissing('order_items', 'setup_price', 'INTEGER DEFAULT 0'); // nama asli file yang diupload admin (untuk nama file saat download)
+addColumnIfMissing('order_items', 'setup_price', 'INTEGER DEFAULT 0');
+addColumnIfMissing('products', 'source_repo', 'TEXT'); // URL repo GitHub asal (jika diimpor dari GitHub)
+addColumnIfMissing('products', 'source_ref', 'TEXT');  // branch/tag yang diimpor
 
 if (isNew) {
   console.log('Database baru dibuat di db/market.sqlite. Jalankan "npm run seed" untuk mengisi data contoh.');
