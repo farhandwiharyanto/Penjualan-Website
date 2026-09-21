@@ -15,6 +15,7 @@ samples/portal-lembur-it/src/database/*.sqlite
 
 # Source produk yang dijual — JANGAN ikut ke repo publik (build zip-nya ada di storage/files yang juga diabaikan)
 samples/portal-lembur-it/
+samples/wedding-planner/
 
 # Thumbnail produk boleh ikut (kecil, dibuat oleh `npm run thumbs`)
 !public/uploads/thumb-*.png

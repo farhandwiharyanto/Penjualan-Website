@@ -19,6 +19,20 @@ app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 app.use(methodOverride('_method'));
 app.use('/public', express.static(path.join(__dirname, 'public')));
+// Demo berbentuk SPA (React/Vue router, Next.js static export): path di dalam demo yang bukan file
+// dilayani halaman HTML yang paling cocok: <path>.html, lalu <induk>/_.html (placeholder segmen dinamis,
+// mis. /pay/link_1 -> pay/_.html), terakhir index.html demo tersebut.
+app.get('/public/demos/:slug/*', (req, res, next) => {
+  const fs = require('fs');
+  const root = path.join(__dirname, 'public', 'demos', req.params.slug);
+  if (path.extname(req.path) || !fs.existsSync(path.join(root, 'index.html'))) return next();
+  const segs = req.params[0].split('/').filter(Boolean);
+  const candidates = [path.join(root, ...segs) + '.html'];
+  for (let i = segs.length; i > 0; i--) candidates.push(path.join(root, ...segs.slice(0, i - 1), '_.html'));
+  candidates.push(path.join(root, 'index.html'));
+  const hit = candidates.find(f => f.startsWith(root) && fs.existsSync(f));
+  res.sendFile(hit);
+});
 
 app.use(session({
   store: new SQLiteStore({ db: 'sessions.sqlite', dir: path.join(__dirname, 'db') }),
