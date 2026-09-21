@@ -123,7 +123,7 @@ if (!outOnly && tiers.length === 2) {
     short_desc: 'Sistem pengajuan lembur & cuti dengan approval berjenjang, dashboard per peran, dan PDF siap cetak.',
     description: 'Aplikasi HR internal untuk mengelola pengajuan lembur dan cuti karyawan. Alur persetujuan Karyawan → Pimpinan → Admin, tanda tangan digital, dokumen PDF (surat tugas lembur, formulir cuti A4, rekap bulanan), dashboard dengan grafik per peran, serta manajemen pengguna. Dibangun dengan Laravel 12, Tailwind CSS 4, Alpine.js, Chart.js, DomPDF. Default SQLite — jalan tanpa server database; siap deploy via Docker atau Vercel.\n\nVersi Lite berisi modul lembur lengkap untuk dicoba dan dipakai internal non-komersial. Premium menambahkan modul cuti, laporan, rekap PDF massal, utilitas PDF, integrasi LDAP/HRIS, dokumentasi, dan lisensi komersial.',
     tech_stack: 'Laravel 12, PHP 8.2, Tailwind CSS 4, Alpine.js, Chart.js, DomPDF, SQLite/MySQL/PostgreSQL',
-    features: premiumFeatures.join('\n'), free_features: freeFeatures.join('\n'), price: 750000, update_months: 12,
+    features: premiumFeatures.join('\n'), free_features: freeFeatures.join('\n'), price: 599000, update_months: 12,
     file_path: result.premium, file_name: result.premium, free_file_path: result.free, free_file_name: result.free,
     demo_url: process.env.PORTAL_DEMO_URL || '', is_active: 1,
   };
