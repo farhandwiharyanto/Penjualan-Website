@@ -194,6 +194,15 @@ salin zip ke `storage/files/` dan isi kolom `file_path` (nama file di folder itu
 | File source code | `storage/files/` | **Tidak** — hanya lewat `/download/:orderId/:productId` setelah lunas |
 | Database | `db/market.sqlite` | Tidak |
 
+### Demo produk Laravel (Portal Lembur) di Vercel
+
+Produk berbasis PHP tidak bisa dilayani dari `public/demos/`, jadi demonya di-hosting terpisah:
+- URL demo: `https://portal-lembur-demo.vercel.app` (project Vercel `portal-lembur-demo`, database Neon via integrasi Vercel)
+- Folder deploy: `~/portal-lembur-demo` (salinan `samples/portal-lembur-it/src` + adaptasi Vercel, sudah `vercel link`)
+- Update demo: salin perubahan dari `samples/portal-lembur-it/src`, lalu `cd ~/portal-lembur-demo && vercel deploy --prod`
+- Reset data demo: `vercel env pull .env.local` lalu `DB_CONNECTION=pgsql DB_URL="<DATABASE_URL>" php artisan migrate:fresh --seed --force`
+- Env penting di Vercel: `APP_KEY`, `DB_CONNECTION=pgsql`, `SESSION_SAME_SITE=none`, `SESSION_SECURE_COOKIE=true` (agar login jalan di iframe), `APP_DEMO=true` (kotak akun demo di halaman login)
+
 ## Menghubungkan Webhook Midtrans (untuk status pembayaran otomatis)
 
 Saat development di `localhost`, Midtrans tidak bisa mengirim notifikasi ke komputermu.
